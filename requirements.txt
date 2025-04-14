@@ -20,3 +20,6 @@ prophet>=1.1.5
 
 # Machine Learning
 scikit-learn>=1.2.0
+xgboost>=1.7.0
+plotly>=5.0.0
+
