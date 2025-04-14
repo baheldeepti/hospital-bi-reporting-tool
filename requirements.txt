@@ -1,0 +1,22 @@
+# Core App Dependencies
+streamlit>=1.25.0
+pandas>=1.5.0
+numpy>=1.23.0
+matplotlib>=3.5.0
+seaborn>=0.12.0
+altair>=4.2.0
+fpdf>=1.7.2
+
+# Streamlit Chat UI
+streamlit-chat>=0.0.2
+
+# LangChain + OpenAI
+langchain>=0.0.200
+langchain-experimental>=0.0.10
+openai>=0.27.0
+
+# Time Series Forecasting
+prophet>=1.1.5
+
+# Machine Learning
+scikit-learn>=1.2.0
