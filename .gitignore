@@ -1,0 +1,15 @@
+# Ignore Python cache and virtual envs
+__pycache__/
+*.pyc
+*.pyo
+.env/
+.venv/
+venv/
+
+# Streamlit secrets file (do NOT commit API keys!)
+.streamlit/secrets.toml
+
+# OS / IDE metadata
+.DS_Store
+.idea/
+.vscode/
