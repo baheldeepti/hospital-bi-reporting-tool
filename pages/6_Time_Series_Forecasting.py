@@ -209,7 +209,8 @@ def main():
                         max_retries = 3
                         for attempt in range(max_retries):
                             try:
-                                response = ChatCompletion.create(
+
+                                response = openai.chat.completions.create(
                                     model="gpt-3.5-turbo",
                                     messages=[
                                         {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
