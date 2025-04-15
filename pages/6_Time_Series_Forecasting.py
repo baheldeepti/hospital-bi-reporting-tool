@@ -117,7 +117,21 @@ def main():
     st.subheader("🗕 Forecast Patient Volume")
     granularity = st.selectbox("Time Granularity", ["D", "W", "M"], format_func=lambda x: {"D": "Daily", "W": "Weekly", "M": "Monthly"}[x])
     forecast_horizon = st.slider("Forecast Horizon", 7, 60, 14, step=7)
-    horizon_label = {"D": "days", "W": "weeks", "M": "months"}[granularity]
+    horizon_label = {"D": "days", "W": "weeks", "M": "months"}[granularity
+
+
+    # Custom date selection
+    min_date = df['Date of Admission'].min()
+    max_date = df['Date of Admission'].max()
+    st.markdown(
+        f"**ℹ️ Note:** Forecast will use all available data by default ({min_date.date()} to {max_date.date()}). You may adjust the range below."
+    )
+    date_range = st.date_input("Select data timeframe for forecasting:", value=(min_date.date(), max_date.date()))
+
+    # Filter data based on selected range
+    if isinstance(date_range, tuple) and len(date_range) == 2:
+        df = df[(df['Date of Admission'] >= pd.to_datetime(date_range[0])) &
+                (df['Date of Admission'] <= pd.to_datetime(date_range[1]))]
 
     ts = df.groupby("Date of Admission").size().rename("Patient Count").to_frame()
     ts = ts.resample(granularity).sum()
@@ -125,6 +139,9 @@ def main():
 
     st.line_chart(ts['Patient Count'])
     st.markdown(f"**Spikes/Dips Detected:** {ts['Spike'].sum()} {horizon_label}")
+
+
+
 
     try:
         arima_fit = run_arima(ts)
