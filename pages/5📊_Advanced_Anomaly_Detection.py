@@ -1,6 +1,8 @@
-
 # 📊 Streamlit Hospital Model Comparison App
 
+# =====================================================================
+# 📦 Imports and Dependencies
+# =====================================================================
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -20,42 +22,64 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.cluster import KMeans
 from xgboost import XGBClassifier
 
+# =====================================================================
+# 🚀 Main Application Entry Point
+# =====================================================================
 def main():
-    # --------------------------
-    # Set Up Page
-    # --------------------------
+    # -----------------------------------------------------------------
+    # ⚙️ Set Page Configuration and Title
+    # -----------------------------------------------------------------
     st.set_page_config(page_title="📊 Hospital Model Comparison", layout="wide")
-    st.title("📊 Hospital BI: Predictive Model & Cluster Analysis")
+    st.title(":hospital: Hospital BI: Predictive Model & Cluster Analysis")
 
+    # -----------------------------------------------------------------
+    # 🧭 Sidebar Navigation and Instructions
+    # -----------------------------------------------------------------
     with st.sidebar:
-        st.header("📝 How to Use")
-        st.markdown(
-            """
-            1. Upload your hospital dataset (or use sample)
-            2. Explore model performance (ROC, metrics)
-            3. Visualize anomaly patterns
-            4. Enable clustering to compare models on patient segments
-            5. Download results for further analysis
-            """
-        )
+        st.header("📜 How to Use")
+        st.markdown("""
+        1. Upload your hospital dataset (or use sample)
+        2. Explore model performance (ROC, metrics)
+        3. Visualize anomaly patterns
+        4. Enable clustering to compare models on patient segments
+        5. Download results for further analysis
+        """)
 
-    st.markdown("Welcome to the **Hospital Model Comparison App**! This dashboard helps healthcare analysts and executives:")
-    st.markdown("- Predict abnormal test results using machine learning")
-    st.markdown("- Understand patterns in billing, age, and stay length")
-    st.markdown("- Compare results across patient clusters to improve decision-making")
+    # -----------------------------------------------------------------
+    # 📝 App Overview and Welcome Message
+    # -----------------------------------------------------------------
+    st.markdown("""
+    Welcome to the **Hospital Model Comparison App**! This dashboard helps healthcare analysts and executives:
+    - Predict abnormal test results using machine learning
+    - Understand patterns in billing, age, and stay length
+    - Compare results across patient clusters to improve decision-making
+    """)
 
-    # === Upload Dataset ===
+    # =====================================================================
+    # 📂 Data Upload and Fallback to Sample Dataset
+    # =====================================================================
     st.subheader("📁 Upload Your Hospital Data or Use Sample")
     file = st.file_uploader("Upload CSV", type=["csv"])
+    required_cols = ['Billing Amount', 'Medical Condition', 'Medication', 'Date of Admission', 'Discharge Date']
+
     if file is not None:
-        df = pd.read_csv(file)
-        st.success("✅ Custom dataset uploaded successfully!")
+        try:
+            df = pd.read_csv(file)
+            if not all(col in df.columns for col in required_cols):
+                st.error(f"❌ Missing required columns: {', '.join(required_cols)}")
+                st.stop()
+            st.success("✅ Custom dataset uploaded successfully!")
+        except Exception as e:
+            st.error(f"❌ Error reading file: {e}")
+            st.stop()
     else:
         url = "https://github.com/baheldeepti/hospital-streamlit-app/raw/main/modified_healthcare_dataset.csv"
         df = pd.read_csv(url)
         st.warning("⚠️ Using default sample dataset.")
 
-    # === Preprocessing ===
+    # =====================================================================
+    # 🧹 Data Preprocessing and Feature Engineering
+    # =====================================================================
     df['Date of Admission'] = pd.to_datetime(df['Date of Admission'])
     df['Discharge Date'] = pd.to_datetime(df['Discharge Date'])
 
@@ -73,7 +97,9 @@ def main():
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # === Model Options ===
+    # =====================================================================
+    # 🧠 Define Machine Learning Models for Evaluation
+    # =====================================================================
     model_options = {
         "Logistic Regression": LogisticRegression(max_iter=1000),
         "Decision Tree": DecisionTreeClassifier(),
@@ -82,14 +108,23 @@ def main():
         "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric="logloss")
     }
 
-    # === Core Analytics Sections ===
-    run_model_performance(df, X_test_scaled, y_test, model_options, X_train_scaled, y_train)
+    # =====================================================================
+    # 📊 Execute Analytics Workflows (Unclustered + Anomalies + Clustering)
+    # =====================================================================
+    metrics_df = run_model_performance(df, X_test_scaled, y_test, model_options, X_train_scaled, y_train)
     run_anomaly_visual(df)
-    run_clustered_comparison(df, model_options)
+    run_clustered_comparison(df, model_options, metrics_df)
 
+# =====================================================================
+# 📈 Model Performance Without Clustering
+# =====================================================================
 def run_model_performance(df, X_test_scaled, y_test, model_options, X_train_scaled, y_train):
     st.subheader("📈 Model Performance Without Clustering")
     selected_models = st.multiselect("Choose Models", list(model_options.keys()), default=list(model_options.keys()))
+
+    if not selected_models:
+        st.warning("⚠️ Please select at least one model to evaluate.")
+        return pd.DataFrame()
 
     df_metrics = []
     report_text = ""
@@ -99,13 +134,16 @@ def run_model_performance(df, X_test_scaled, y_test, model_options, X_train_scal
         clf = model_options[name]
         clf.fit(X_train_scaled, y_train)
         y_pred = clf.predict(X_test_scaled)
-        y_score = clf.predict_proba(X_test_scaled)[:, 1]
+
+        if hasattr(clf, "predict_proba"):
+            y_score = clf.predict_proba(X_test_scaled)[:, 1]
+        elif hasattr(clf, "decision_function"):
+            y_score = clf.decision_function(X_test_scaled)
+        else:
+            y_score = y_pred
 
         report = classification_report(y_test, y_pred, target_names=["Normal", "Abnormal"])
-        report_text += f"=== {name} ===
-{report}
-
-"
+        report_text += f"=== {name} ===\n{report}\n\n"
 
         df_metrics.append({
             "Model": name,
@@ -133,21 +171,11 @@ def run_model_performance(df, X_test_scaled, y_test, model_options, X_train_scal
     st.download_button("📥 Download Metrics CSV", metrics_df.to_csv(index=False), file_name="model_performance_metrics.csv")
     st.download_button("📥 Download Classification Reports (.txt)", report_text, file_name="classification_reports.txt")
 
-    best_model = max(df_metrics, key=lambda x: x['Accuracy'])['Model']
-    best_precision = max(df_metrics, key=lambda x: x['Precision'])['Model']
-    best_recall = max(df_metrics, key=lambda x: x['Recall'])['Model']
-    best_f1 = max(df_metrics, key=lambda x: x['F1 Score'])['Model']
+    return metrics_df
 
-    st.markdown(f"""
-    ### 📢 Business Summary
-    - **{best_model}** has the highest overall accuracy.
-    - **{best_precision}** minimizes false positives.
-    - **{best_recall}** identifies the most true abnormal cases.
-    - **{best_f1}** offers balanced performance.
-
-    Use these models to drive proactive patient care and operational planning.
-    """)
-
+# =====================================================================
+# 📉 Anomaly Detection and Visualization
+# =====================================================================
 def run_anomaly_visual(df):
     st.subheader("📉 Anomaly Detection Visualization")
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -168,10 +196,12 @@ def run_anomaly_visual(df):
     anomalies_df = df[df['anomaly_dynamic'] == "Anomaly"]
     st.download_button("📥 Download Anomalies as CSV", anomalies_df.to_csv(index=False), file_name=f"anomalies_in_{anomaly_col}.csv")
 
-def run_clustered_comparison(df, model_options):
+# =====================================================================
+# 🔍 Clustered Model Performance with K-Means
+# =====================================================================
+def run_clustered_comparison(df, model_options, baseline_df):
     if st.checkbox("🔘 Enable Clustered Model Comparison"):
         st.header("🔍 K-Means Clustering")
-
         cluster_features = ['Age', 'Billing Amount', 'Length of Stay', 'Condition']
         scaled_cluster = StandardScaler().fit_transform(df[cluster_features])
 
@@ -230,14 +260,20 @@ def run_clustered_comparison(df, model_options):
             aggregated = df_clustered.groupby("Model")[["Accuracy", "Precision", "Recall", "F1 Score"]].mean().reset_index()
             st.subheader("🔳 Aggregated Clustered Model Performance")
             st.dataframe(aggregated.style.highlight_max(axis=0, color="lightgreen"))
-
             st.download_button("📥 Download Clustered Metrics CSV", df_clustered.to_csv(index=False), file_name="clustered_model_metrics.csv")
 
             st.markdown("### 📢 Business Insight: Clustered vs Unclustered Models")
             for model in aggregated['Model']:
-                base_row = df_clustered[df_clustered['Model'] == model].iloc[0]
-                cluster_row = aggregated[aggregated['Model'] == model].iloc[0]
-                st.markdown(f"**{model}**: Accuracy `{cluster_row['Accuracy']:.2%}`")
+                match = baseline_df[baseline_df['Model'] == model]
+                if not match.empty:
+                    base_row = match.iloc[0]
+                    cluster_row = aggregated[aggregated['Model'] == model].iloc[0]
+                    st.markdown(f"**{model}**: Accuracy `{cluster_row['Accuracy']:.2%}` vs base `{base_row['Accuracy']:.2%}`")
+                else:
+                    st.warning(f"⚠️ No baseline performance available for model: {model}")
 
+# =====================================================================
+# ▶️ Run the App
+# =====================================================================
 if __name__ == "__main__":
     main()
