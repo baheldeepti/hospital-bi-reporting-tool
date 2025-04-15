@@ -195,25 +195,46 @@ def main():
             api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
             if api_key:
                 openai.api_key = api_key
+                
                 try:
+                    ...
+                    import time
                     insights_prompt = f"""
                     Analyze patient trends and forecasts for {forecast_horizon} {horizon_label}.
                     Include model performance (ARIMA RMSE: {arima_rmse:.2f}, Prophet RMSE: {prophet_rmse:.2f}),
                     spikes detected: {ts['Spike'].sum()}, holidays: {len(holiday_dates)}.
                     Return 2-3 executive summary bullet points.
                     """
-                    response = ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
-                            {"role": "user", "content": insights_prompt}
-                        ]
-                    )
-                    st.markdown(response.choices[0].message.content)
-                except Exception as e:
-                    st.exception(e)
-            else:
-                st.info("Provide an OpenAI key in secrets or session to enable insights.")
+    
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            response = ChatCompletion.create(
+                                model="gpt-3.5-turbo",
+                                messages=[
+                                    {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
+                                    {"role": "user", "content": insights_prompt}
+                                ]
+                            )
+                            st.markdown(response.choices[0].message.content)
+                            break  # Exit loop if successful
+                        except Exception as e:
+                            error_str = str(e).lower()
+                            if 'rate limit' in error_str or 'timeout' in error_str:
+                                st.warning(f"Attempt {attempt + 1} failed due to rate limit or timeout. Retrying...")
+                                time.sleep(2 ** attempt)
+                            elif 'invalid api key' in error_str:
+                                st.error("Invalid OpenAI API key. Please check your credentials.")
+                                break
+                            elif 'quota' in error_str:
+                                st.error("You have exceeded your OpenAI API quota.")
+                                break
+                            else:
+                                st.error("An unexpected error occurred while calling OpenAI API.")
+                                st.exception(e)
+                                break
+    ...
+    
 
 if __name__ == "__main__":
     main()
