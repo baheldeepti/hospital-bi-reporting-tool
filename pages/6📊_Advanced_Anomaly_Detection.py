@@ -174,7 +174,7 @@ st.pyplot(fig)
 
 
 # -- Model Comparison
-st.sidebar.header("📊 Model Evaluation (Top 3 features selected by default)")
+st.markdown("📊 Model Evaluation (Top 3 features selected by default)")
 selected = st.sidebar.multiselect("Select Features for Modeling", top_features, default=top_features[:3])
 if selected:
     X = df[selected]
@@ -240,6 +240,13 @@ if selected:
     - Top predictive features include: **{', '.join(top_features[:5])}**, with **{top_features[0]}** contributing most to the model's decisions.
     - Among all tested models, **{results_df.sort_values(by='AUC', ascending=False).iloc[0]['Model']}** showed the highest performance with AUC of **{results_df.sort_values(by='AUC', ascending=False).iloc[0]['AUC']:.2f}**.
     - SHAP analysis confirms the impact of these features, providing interpretable justifications for predictions.
+
+    ### 💰 Business Impact
+    Identifying anomalies in billing helps hospitals:
+    - Save costs by flagging overbilling or incorrect entries early
+    - Reduce revenue leakage from unbilled or undercoded procedures
+    - Prioritize audits for high-risk patients, improving operational efficiency
+    - Ensure fair and accurate charges, enhancing trust with insurers and patients
     """)
 
     st.subheader("🧠 Per-Model Evaluation Summary")
@@ -276,7 +283,7 @@ def generate_gpt_summary(metrics_df, best_model, best_auc):
                         {"role": "user", "content": prompt}
                     ]
                 )
-                st.subheader("🧠 AI-Generated Insight Summary")
+                
                 st.markdown(response.choices[0].message.content)
                 return response.choices[0].message.content
             except Exception as e:
