@@ -71,11 +71,34 @@ def run_model_performance(X_test, y_test, models, X_train, y_train):
 
 # 🚨 Visualize anomalies detected using Isolation Forest
 
+
 def run_anomaly_visual(df):
     st.subheader("🚨 Anomaly Detection Overview")
-    fig = px.scatter(df, x="Billing Amount", y="Length of Stay", color=df['anomaly'].map({1: "Anomaly", -1: "Normal"}),
-                     title="Anomaly Detection Results")
-    st.plotly_chart(fig, use_container_width=True)
+
+    # Get anomaly scores
+    model = IsolationForest(contamination=0.05, random_state=42)
+    df['anomaly_score'] = model.fit(df[['Billing Amount']]).decision_function(df[['Billing Amount']])
+    df['anomaly'] = model.predict(df[['Billing Amount']])
+
+    # Plot anomaly score distribution
+    st.markdown("**📉 Anomaly Scores for Billing Amount**")
+    fig_score = px.histogram(df, x='anomaly_score', nbins=50, title="Distribution of Anomaly Scores")
+    st.plotly_chart(fig_score, use_container_width=True)
+
+    # Scatter plot of anomalies
+    fig_scatter = px.scatter(
+        df,
+        x="Billing Amount",
+        y="Length of Stay",
+        color=df['anomaly'].map({1: "Normal", -1: "Anomaly"}),
+        title="Billing Amount vs Stay Length with Anomalies"
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # Allow CSV download of anomalies
+    anomalies = df[df['anomaly'] == -1]
+    st.download_button("📁 Download Detected Anomalies", anomalies.to_csv(index=False), file_name="anomalies.csv", mime="text/csv")
+
 
 # 🔬 Clustering and comparison
 
@@ -209,9 +232,10 @@ def main():
     df['Gender'] = LabelEncoder().fit_transform(df['Gender'].fillna("Unknown"))
     df['Insurance'] = pd.factorize(df['Insurance Provider'])[0]
 
-    features = ['Age', 'Billing Amount', 'Length of Stay', 'Condition', 'Medication', 'Gender', 'Insurance']
+    features = ['Age', 'Billing Amount', 'Length of Stay', 'Condition', 'Insurance']
     target = (df['anomaly'] == 1).astype(int)
-
+    
+    run_anomaly_visual(df)
     X_train, X_test, y_train, y_test = train_test_split(df[features], target, test_size=0.3, random_state=42, stratify=target)
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
@@ -226,7 +250,7 @@ def main():
     }
 
     metrics_df, best_model, best_auc = run_model_performance(X_test_scaled, y_test, model_options, X_train_scaled, y_train)
-    run_anomaly_visual(df)
+   
     run_clustered_comparison(df, features)
     gpt_text = generate_gpt_summary(metrics_df, best_model, best_auc)
 
