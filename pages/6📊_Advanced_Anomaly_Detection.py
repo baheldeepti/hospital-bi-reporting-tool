@@ -164,7 +164,9 @@ st.subheader("🔍 SHAP Explanation (Top 10 Features)")
 explainer = shap.Explainer(model)
 shap_values = explainer(X_test_scaled_all)
 shap.summary_plot(shap_values, X_test_all, plot_type="bar", show=False)
-st.pyplot(bbox_inches='tight')
+fig = plt.gcf()
+st.pyplot(fig)
+
 
 
 
