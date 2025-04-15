@@ -198,46 +198,46 @@ def main():
                 
                 import time
                 try:
-                    insights_prompt = f"""
+                    user_prompt = st.text_area("✍️ Customize AI Insight Prompt", value=f"""
                     Analyze patient trends and forecasts for {forecast_horizon} {horizon_label}.
                     Include model performance (ARIMA RMSE: {arima_rmse:.2f}, Prophet RMSE: {prophet_rmse:.2f}),
                     spikes detected: {ts['Spike'].sum()}, holidays: {len(holiday_dates)}.
                     Return 2-3 executive summary bullet points.
-                    """
+                    """.strip(), height=160)
 
-                    max_retries = 3
-                    for attempt in range(max_retries):
-                        try:
-                            response = ChatCompletion.create(
-                                model="gpt-3.5-turbo",
-                                messages=[
-                                    {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
-                                    {"role": "user", "content": insights_prompt}
-                                ]
-                            )
-                            st.markdown(response.choices[0].message.content)
-                            break  # Exit loop if successful
-                        except Exception as e:
-                            error_str = str(e).lower()
-                            if 'rate limit' in error_str or 'timeout' in error_str:
-                                st.warning(f"Attempt {attempt + 1} failed due to rate limit or timeout. Retrying...")
-                                time.sleep(2 ** attempt)
-                            elif 'invalid api key' in error_str:
-                                st.error("Invalid OpenAI API key. Please check your credentials.")
+                    if st.button("🔍 Generate Narrative Insights"):
+                        max_retries = 3
+                        for attempt in range(max_retries):
+                            try:
+                                response = ChatCompletion.create(
+                                    model="gpt-3.5-turbo",
+                                    messages=[
+                                        {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
+                                        {"role": "user", "content": user_prompt.strip()}
+                                    ]
+                                )
+                                st.markdown(response.choices[0].message.content)
                                 break
-                            elif 'quota' in error_str:
-                                st.error("You have exceeded your OpenAI API quota.")
-                                break
-                            else:
-                                st.error("An unexpected error occurred while calling OpenAI API.")
-                                st.exception(e)
-                                break
+                            except Exception as e:
+                                error_str = str(e).lower()
+                                if 'rate limit' in error_str or 'timeout' in error_str:
+                                    st.warning(f"Attempt {attempt + 1} failed due to rate limit or timeout. Retrying...")
+                                    time.sleep(2 ** attempt)
+                                elif 'invalid api key' in error_str:
+                                    st.error("Invalid OpenAI API key. Please check your credentials.")
+                                    break
+                                elif 'quota' in error_str:
+                                    st.error("You have exceeded your OpenAI API quota.")
+                                    break
+                                else:
+                                    st.error("An unexpected error occurred while calling OpenAI API.")
+                                    st.exception(e)
+                                    break
                 except Exception as outer_e:
                     st.error("An error occurred while preparing or submitting the GPT request.")
                     st.exception(outer_e)
-    
-                    max_retries = 3
-                    for attempt in range(max_retries):
+               
+                               
 
 
     
