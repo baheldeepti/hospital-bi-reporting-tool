@@ -23,7 +23,4 @@ scikit-learn>=1.2.0
 xgboost>=1.7.0
 plotly>=5.0.0
 statsmodels
-streamlit
-pandas
-numpy
 
