@@ -86,6 +86,7 @@ def run_anomaly_visual(df):
     fig_score = px.histogram(df, x='anomaly_score', nbins=50, title="Distribution of Anomaly Scores")
     st.plotly_chart(fig_score, use_container_width=True)
 
+
     # Scatter plot of anomalies
     fig_scatter = px.scatter(
         df,
@@ -95,22 +96,20 @@ def run_anomaly_visual(df):
         title="Billing Amount vs Stay Length with Anomalies"
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
-        st.markdown("""
+        # Allow CSV download of anomalies
+    anomalies = df[df['anomaly'] == -1]
+    st.download_button("📁 Download Detected Anomalies", anomalies.to_csv(index=False), file_name="anomalies.csv", mime="text/csv")
+
+    st.markdown("""
 ### 💡 Insights from Anomaly Detection
 
 The histogram of anomaly scores shows a clear distribution tail, indicating potential outliers in billing behavior. Patients classified as **anomalies** tend to have significantly **higher or lower billing amounts** than typical cases.
-
-From the scatterplot, it's evident that anomalies are concentrated around **short stay durations with high costs**, suggesting possible cases of **overbilling or high-cost treatments**.
-
 Use these visual cues to:
 - Flag and investigate unusual billing instances
 - Audit patient records with short stays but high expenses
 - Guide resource allocation or fraud detection strategies
 """)
 
-    # Allow CSV download of anomalies
-    anomalies = df[df['anomaly'] == -1]
-    st.download_button("📁 Download Detected Anomalies", anomalies.to_csv(index=False), file_name="anomalies.csv", mime="text/csv")
 
 
 # 🔬 Clustering and comparison
