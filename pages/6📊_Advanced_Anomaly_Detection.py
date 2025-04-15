@@ -231,7 +231,6 @@ if selected:
 - 🔍 Best at catching correct anomalies (Precision): **{best_by_precision['Model']}** (Precision = {best_by_precision['Precision']:.2f})
 - ⚖️ Best balance between catching and avoiding wrong alerts (F1): **{best_by_f1['Model']}** (F1 = {best_by_f1['F1']:.2f})
 """)
-
     # -- SHAP for User-Selected Best Model
     shap_metric = st.selectbox(
         "🎯 Select Metric to Choose Best Model for SHAP Explanation:",
@@ -246,9 +245,21 @@ if selected:
     shap_values_top = explainer_top(X_test_scaled)
 
     st.subheader(f"🔎 SHAP Summary for Best Model")
-    st.markdown(f"<span style='display:inline-block;background-color:#d0f0c0;padding:6px 12px;border-radius:10px;color:#333;font-weight:bold;'>🏆 Selected Model: {best_model_name} (by {shap_metric})</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='display:inline-block;background-color:#d0f0c0;padding:6px 12px;border-radius:10px;color:#333;font-weight:bold;'>🏆 Selected Model: {best_model_name} (by {shap_metric})</span>", unsafe_allow_html=True)
     shap.summary_plot(shap_values_top, X_test, plot_type="dot", show=False)
-    st.pyplot(bbox_inches='tight')
+fig = plt.gcf()
+st.pyplot(fig)
+
+    # -- SHAP Plain English Summary
+    st.markdown("### 📋 SHAP Explanation Summary in Simple Terms")
+    st.markdown("Here are the top features and what they mean:")
+    top_indices = np.argsort(np.abs(shap_values_top.values).mean(0))[-5:][::-1]
+    for idx in top_indices:
+        feat = X_test.columns[idx]
+        shap_val = shap_values_top.values[:, idx].mean()
+        direction = "increase" if shap_val > 0 else "decrease"
+        st.markdown(f"- **{feat}** tends to **{direction}** the likelihood of a record being flagged as an anomaly.")
+
     st.markdown("---")
  
     # --Narrative Summary Section 
