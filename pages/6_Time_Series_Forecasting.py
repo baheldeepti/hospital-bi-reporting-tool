@@ -189,6 +189,8 @@ def main():
         st.download_button("Download Forecast CSV", csv, file_name="forecast_results.csv", mime="text/csv")
 
         st.markdown("### 🧠 AI-Powered Narrative")
+
+
         if openai_available:
             api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
             if api_key:
@@ -208,8 +210,6 @@ def main():
                         ]
                     )
                     st.markdown(response.choices[0].message.content)
-                except openai.error.OpenAIError as e:
-                    st.error("GPT request failed due to OpenAI API error.")
                 except Exception as e:
                     st.exception(e)
             else:
