@@ -114,11 +114,11 @@ def main():
     fig.update_layout(xaxis_title="Week", yaxis_title="Number of Patients")
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("🗕 Forecast Patient Volume")
+    
+    st.subheader("Forecast Patient Volume")
     granularity = st.selectbox("Time Granularity", ["D", "W", "M"], format_func=lambda x: {"D": "Daily", "W": "Weekly", "M": "Monthly"}[x])
     forecast_horizon = st.slider("Forecast Horizon", 7, 60, 14, step=7)
-    horizon_label = {"D": "days", "W": "weeks", "M": "months"}[granularity
-
+    horizon_label = {"D": "days", "W": "weeks", "M": "months"}[granularity]
 
     # Custom date selection
     min_date = df['Date of Admission'].min()
@@ -129,16 +129,18 @@ def main():
     date_range = st.date_input("Select data timeframe for forecasting:", value=(min_date.date(), max_date.date()))
 
     # Filter data based on selected range
-    if isinstance(date_range, tuple) and len(date_range) == 2:
-        df = df[(df['Date of Admission'] >= pd.to_datetime(date_range[0])) &
-                (df['Date of Admission'] <= pd.to_datetime(date_range[1]))]
+    if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+        start_date, end_date = date_range
+        df = df[(df['Date of Admission'] >= pd.to_datetime(start_date)) &
+                (df['Date of Admission'] <= pd.to_datetime(end_date))]
 
     ts = df.groupby("Date of Admission").size().rename("Patient Count").to_frame()
     ts = ts.resample(granularity).sum()
-    ts['Spike'] = ((ts - ts.mean()) / ts.std())['Patient Count'].abs() > 2
+    ts['Spike'] = ((ts['Patient Count'] - ts['Patient Count'].mean()) / ts['Patient Count'].std()).abs() > 2
 
     st.line_chart(ts['Patient Count'])
     st.markdown(f"**Spikes/Dips Detected:** {ts['Spike'].sum()} {horizon_label}")
+
 
 
 
