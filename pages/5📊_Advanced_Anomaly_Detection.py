@@ -235,7 +235,7 @@ def main():
     df['Is Weekend Admission'] = df['Date of Admission'].dt.weekday >= 5
 
 
-    features = ['Age', 'Billing Amount', 'Length of Stay', 'Cost Per Day','Is Weekend Admission']
+    features = ['Age', 'Billing Amount', 'Length of Stay']
     target = (df['anomaly'] == 1).astype(int)
     
     run_anomaly_visual(df)
