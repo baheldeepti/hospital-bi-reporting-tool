@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import logging
 import zipfile
 from io import BytesIO
@@ -13,15 +14,14 @@ import os
 
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    accuracy_score, precision_score,
-    recall_score, f1_score, roc_curve, auc
-)
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, IsolationForest
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.cluster import KMeans
 from xgboost import XGBClassifier
+from sklearn.base import clone
+from kneed import KneeLocator
 
 try:
     import openai
@@ -34,7 +34,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # 🔍 Evaluate unclustered models on the dataset
 
 def run_model_performance(X_test, y_test, models, X_train, y_train):
-    import plotly.graph_objects as go
     roc_fig = go.Figure()
     st.subheader("📈 Model Performance Summary")
     metrics = []
@@ -84,59 +83,91 @@ def run_anomaly_visual(df):
                      title="Anomaly Detection Results")
     st.plotly_chart(fig, use_container_width=True)
 
-# 📦 ZIP and PDF Export Utilities
+# 🔬 Clustering and model comparison with elbow, visualizations and line charts
 
-def generate_zip_export(files):
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zf:
-        index_lines = ["Dashboard Visual Index:"]
-        for path, label in files:
-            if os.path.exists(path):
-                filename = os.path.basename(path)
-                zf.write(path, arcname=filename)
-                index_lines.append(f"- {label}: {filename}")
-        zf.writestr("index.txt", "\n".join(index_lines))
-    zip_buffer.seek(0)
-    return zip_buffer
+def run_clustered_comparison(df):
+    st.subheader("🧪 Cluster-Based Model Comparison")
+    features = ['Age', 'Billing Amount', 'Length of Stay', 'Gender', 'Insurance']
+    distortions = []
+    for k in range(1, 10):
+        kmeans = KMeans(n_clusters=k, random_state=42).fit(df[features])
+        distortions.append(kmeans.inertia_)
+    kl = KneeLocator(range(1, 10), distortions, curve='convex', direction='decreasing')
+    best_k = kl.elbow if kl.elbow else 3
+    st.plotly_chart(px.line(x=range(1, 10), y=distortions, markers=True, title="Elbow Plot to Find Optimal K"))
+    st.success(f"Best K determined: {best_k}")
 
-def generate_pdf_report(title, content_blocks):
+    models = {
+        "Logistic Regression": LogisticRegression(max_iter=1000),
+        "Decision Tree": DecisionTreeClassifier(),
+        "Random Forest": RandomForestClassifier(),
+        "Gradient Boosting": GradientBoostingClassifier(),
+        "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric="logloss")
+    }
+    results = []
+    for k in range(2, best_k + 1):
+        df['cluster'] = KMeans(n_clusters=k, random_state=42).fit_predict(df[features])
+        for model_name, model_def in models.items():
+            for cluster in sorted(df['cluster'].unique()):
+                cdf = df[df['cluster'] == cluster]
+                if len(cdf) < 10: continue
+                X = cdf[features]
+                y = (cdf['anomaly'] == 1).astype(int)
+                if len(np.unique(y)) < 2: continue
+                X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.3, random_state=42)
+                scaler = StandardScaler()
+                X_train_scaled = scaler.fit_transform(X_train)
+                X_test_scaled = scaler.transform(X_test)
+                model = clone(model_def)
+                model.fit(X_train_scaled, y_train)
+                y_pred = model.predict(X_test_scaled)
+                results.append({
+                    "K": k, "Cluster": cluster, "Model": model_name,
+                    "F1 Score": f1_score(y_test, y_pred),
+                    "Precision": precision_score(y_test, y_pred),
+                    "Recall": recall_score(y_test, y_pred),
+                    "AUC": auc(*roc_curve(y_test, model.predict_proba(X_test_scaled)[:, 1])[:2])
+                })
+    clustered_df = pd.DataFrame(results)
+    st.dataframe(clustered_df)
+    st.plotly_chart(px.line(clustered_df, x='K', y='AUC', color='Model', markers=True, title="AUC by Model & K"))
+    return clustered_df
+
+# 📦 PDF and ZIP export utilities
+
+def generate_pdf_report(title, insights, metrics_df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(0, 10, title, ln=True, align='C')
     pdf.ln(10)
     pdf.set_font("Arial", '', 12)
-    for block in content_blocks:
+    for block in insights:
         pdf.multi_cell(0, 10, block)
-        pdf.ln(5)
-    pdf.add_page()
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 10, "Appendix: Dashboard Index", ln=True)
-    pdf.set_font("Arial", '', 12)
-    pdf.multi_cell(0, 10, "This section lists all exported visuals available in the ZIP file.")
-    path = "/tmp/hospital_summary.pdf"
+        pdf.ln(3)
+    pdf.ln(5)
+    pdf.set_font("Arial", '', 10)
+    pdf.multi_cell(0, 10, metrics_df.to_string(index=False))
+    path = "/tmp/report.pdf"
     pdf.output(path)
     return path
 
-# 🚀 Main App Logic
+def generate_zip_export(paths):
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zipf:
+        for p in paths:
+            if os.path.exists(p):
+                zipf.write(p, os.path.basename(p))
+    buffer.seek(0)
+    return buffer
+
+# 🚀 Main app logic
 
 def main():
     st.set_page_config(page_title="📊 Hospital Model Comparison", layout="wide")
-    st.title(":hospital: Hospital BI: Predictive Model & Cluster Analysis")
+    st.title("🏥 Hospital BI: Predictive & Cluster Analysis")
 
-    st.sidebar.header("📜 How to Use")
-    st.sidebar.markdown("""
-    1. Upload your hospital dataset (or use sample)
-    2. Explore model performance (ROC, metrics)
-    3. Visualize anomaly patterns
-    4. Run clustering and compare segmented models
-    """)
-
-    st.subheader("📁 Upload Your Hospital Data or Use Sample")
-    file = st.file_uploader("Upload CSV", type=["csv"])
-    required_cols = ['Billing Amount', 'Medical Condition', 'Medication', 'Date of Admission',
-                     'Discharge Date', 'Age', 'Gender', 'Insurance Provider']
-
+    file = st.file_uploader("Upload hospital dataset", type=["csv"])
     if file:
         df = pd.read_csv(file)
         st.success("✅ File uploaded successfully.")
@@ -144,10 +175,12 @@ def main():
         df = pd.read_csv("https://github.com/baheldeepti/hospital-streamlit-app/raw/main/modified_healthcare_dataset.csv")
         st.warning("⚠️ Using sample dataset")
 
-    if not all(col in df.columns for col in required_cols):
-        st.error("Missing required columns in dataset.")
-        st.stop()
+    required = ['Billing Amount', 'Medical Condition', 'Medication', 'Date of Admission', 'Discharge Date', 'Age', 'Gender', 'Insurance Provider']
+    if not all(col in df.columns for col in required):
+        st.error("❌ Missing required columns.")
+        return
 
+    # 🧼 Data cleansing
     df['Date of Admission'] = pd.to_datetime(df['Date of Admission'])
     df['Discharge Date'] = pd.to_datetime(df['Discharge Date'])
     df['Length of Stay'] = (df['Discharge Date'] - df['Date of Admission']).dt.days
@@ -159,7 +192,6 @@ def main():
 
     features = ['Age', 'Billing Amount', 'Length of Stay', 'Condition', 'Medication', 'Gender', 'Insurance']
     target = (df['anomaly'] == 1).astype(int)
-
     X_train, X_test, y_train, y_test = train_test_split(df[features], target, stratify=target, test_size=0.3, random_state=42)
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
@@ -175,23 +207,43 @@ def main():
 
     metrics_df, best_model, best_auc = run_model_performance(X_test_scaled, y_test, model_options, X_train_scaled, y_train)
     run_anomaly_visual(df)
-    run_clustered_comparison(df, metrics_df)
+    clustered_df = run_clustered_comparison(df)
 
-    # 📆 PDF Export Section
-    summary_blocks = [
-        f"Best unclustered model: {best_model} (AUC: {best_auc:.2f})",
-        "Unclustered model performance table:\n" + metrics_df.to_string(index=False)
-    ]
-    pdf_path = generate_pdf_report("Hospital BI Report", summary_blocks)
+    # 🤖 GPT narrative insight with retry logic
+    if openai_available:
+        api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
+        if api_key:
+            openai.api_key = api_key
+            prompt = f"Best model: {best_model} (AUC: {best_auc:.2f}). Compare unclustered and clustered models."
+            try:
+                for attempt in range(3):
+                    try:
+                        response = openai.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {"role": "system", "content": "You are a healthcare data analyst."},
+                                {"role": "user", "content": prompt}
+                            ]
+                        )
+                        st.markdown(response.choices[0].message.content)
+                        break
+                    except Exception as e:
+                        if 'rate limit' in str(e).lower() or 'timeout' in str(e).lower():
+                            st.warning("Retrying due to timeout...")
+                            time.sleep(2 ** attempt)
+                        else:
+                            raise
+            except Exception as err:
+                st.error("Failed to get GPT response")
+                st.exception(err)
+
+    # 📦 Export all
+    pdf_path = generate_pdf_report("Hospital BI Report", [f"Best Model: {best_model}"], metrics_df)
     with open(pdf_path, "rb") as f:
-        st.download_button("📄 Download Summary PDF", f.read(), file_name="hospital_summary.pdf", mime="application/pdf")
+        st.download_button("📄 Download PDF Report", f.read(), file_name="hospital_report.pdf")
 
-    # 📦 ZIP Export Section
-    chart_paths = [
-        ("/tmp/roc_combined.png", "ROC Curve")
-    ]
-    zip_buffer = generate_zip_export(chart_paths)
-    st.download_button("📦 Download All Visuals (ZIP)", zip_buffer.read(), file_name="charts_bundle.zip", mime="application/zip")
+    zip_buf = generate_zip_export(["/tmp/roc_combined.png", pdf_path])
+    st.download_button("📦 Download All Charts as ZIP", zip_buf.read(), file_name="charts_bundle.zip", mime="application/zip")
 
 if __name__ == "__main__":
     main()
