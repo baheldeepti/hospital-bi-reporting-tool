@@ -4,22 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 📊 App Overview
-st.markdown("""
-## 👋 Welcome to the Hospital Anomaly Finder!
 
-This app helps you find unusual or surprising data in hospital records. Think of it like a smart detective that looks at patient info, figures out what's normal, and points out what’s not!
-
-### What can you do here?
-- 📂 Load hospital data (or use the sample)
-- 🧮 Let the app clean and prepare it for you
-- 🚨 Find out which cases look strange or risky
-- 🧠 See which data points are most important
-- 🤖 Compare smart models to see which one works best
-- 💬 Get simple explanations of how everything works
-
-It's like having a data scientist in your pocket! 😄
-""")
 import shap
 import seaborn as sns
 
@@ -38,11 +23,30 @@ from sklearn.metrics import (
     classification_report, roc_curve, roc_auc_score, f1_score, accuracy_score, precision_score
 )
 
+st.set_page_config(page_title="Hospital Anomaly Detection", layout="wide")
+
+# 📊 App Overview
+st.markdown("""
+## 👋 Welcome to the Hospital Anomaly Finder!
+
+This app helps you find unusual or surprising data in hospital records. Think of it like a smart detective that looks at patient info, figures out what's normal, and points out what’s not!
+
+### What can you do here?
+- 📂 Load hospital data (or use the sample)
+- 🧮 Let the app clean and prepare it for you
+- 🚨 Find out which cases look strange or risky
+- 🧠 See which data points are most important
+- 🤖 Compare smart models to see which one works best
+- 💬 Get simple explanations of how everything works
+
+It's like having a data scientist in your pocket! 😄
+""")
+
 # -- Sample Dataset URL
 sample_url = "https://github.com/baheldeepti/hospital-streamlit-app/raw/main/modified_healthcare_dataset.csv"
 
 # -- App Configuration
-st.set_page_config(page_title="Hospital Anomaly Detection", layout="wide")
+# (Moved set_page_config to the top as required)
 st.title("🏥 Hospital Analytics Chat & Model Assistant")
 
 # -- File Upload or Sample
