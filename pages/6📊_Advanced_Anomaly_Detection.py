@@ -220,15 +220,33 @@ if selected:
 
     results_df = pd.DataFrame(results, columns=["Model", "AUC", "F1", "Accuracy", "Precision"])
     st.dataframe(results_df.sort_values(by="AUC", ascending=False))
+    #identifying best models as different metrics
+    # Example logic to choose based on precision or F1
+    best_by_auc = results_df.sort_values(by='AUC', ascending=False).iloc[0]
+    best_by_precision = results_df.sort_values(by='Precision', ascending=False).iloc[0]
+    best_by_f1 = results_df.sort_values(by='F1', ascending=False).iloc[0]
+    st.markdown(f"""
+💡 Based on different goals:
+- 🎯 Best at overall classification: **{best_by_auc['Model']}** (AUC = {best_by_auc['AUC']:.2f})
+- 🔍 Best at catching correct anomalies (Precision): **{best_by_precision['Model']}** (Precision = {best_by_precision['Precision']:.2f})
+- ⚖️ Best balance between catching and avoiding wrong alerts (F1): **{best_by_f1['Model']}** (F1 = {best_by_f1['F1']:.2f})
+""")
 
-    # Show SHAP summary plot for top model
-    best_model_name = results_df.sort_values(by="AUC", ascending=False).iloc[0]['Model']
+    # -- SHAP for User-Selected Best Model
+    shap_metric = st.selectbox(
+        "🎯 Select Metric to Choose Best Model for SHAP Explanation:",
+        ["AUC", "F1", "Accuracy", "Precision"],
+        index=0,
+        help="Select the evaluation metric that best aligns with your goal: AUC for overall discrimination, Precision to avoid false alerts, Recall to catch all anomalies, or F1 for balance."
+    )
+    best_model_name = results_df.sort_values(by=shap_metric, ascending=False).iloc[0]['Model']
     best_model = models[best_model_name]
     best_model.fit(X_train_scaled, y_train)
     explainer_top = shap.Explainer(best_model)
     shap_values_top = explainer_top(X_test_scaled)
 
-    st.subheader(f"🔎 SHAP Summary for Best Model: {best_model_name}")
+    st.subheader(f"🔎 SHAP Summary for Best Model")
+    st.markdown(f"<span style='display:inline-block;background-color:#d0f0c0;padding:6px 12px;border-radius:10px;color:#333;font-weight:bold;'>🏆 Selected Model: {best_model_name} (by {shap_metric})</span>", unsafe_allow_html=True)
     shap.summary_plot(shap_values_top, X_test, plot_type="dot", show=False)
     st.pyplot(bbox_inches='tight')
     st.markdown("---")
