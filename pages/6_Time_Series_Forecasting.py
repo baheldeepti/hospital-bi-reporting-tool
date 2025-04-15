@@ -196,16 +196,15 @@ def main():
             if api_key:
                 openai.api_key = api_key
                 
+                import time
                 try:
-                    ...
-                    import time
                     insights_prompt = f"""
                     Analyze patient trends and forecasts for {forecast_horizon} {horizon_label}.
                     Include model performance (ARIMA RMSE: {arima_rmse:.2f}, Prophet RMSE: {prophet_rmse:.2f}),
                     spikes detected: {ts['Spike'].sum()}, holidays: {len(holiday_dates)}.
                     Return 2-3 executive summary bullet points.
                     """
-    
+
                     max_retries = 3
                     for attempt in range(max_retries):
                         try:
@@ -233,7 +232,14 @@ def main():
                                 st.error("An unexpected error occurred while calling OpenAI API.")
                                 st.exception(e)
                                 break
-    ...
+                except Exception as outer_e:
+                    st.error("An error occurred while preparing or submitting the GPT request.")
+                    st.exception(outer_e)
+    
+                    max_retries = 3
+                    for attempt in range(max_retries):
+
+
     
 
 if __name__ == "__main__":
