@@ -59,7 +59,7 @@ def run_model_performance(X_test, y_test, models, X_train, y_train):
 
     st.markdown("### 📊 Model Comparison Table")
     sorted_df = pd.DataFrame(metrics).sort_values(by="AUC", ascending=False)
-    styled_table = sorted_df.style.format("{:.2f}")\
+    styled_table = sorted_df.style.format({col: "{:.2f}" for col in sorted_df.select_dtypes(include='number').columns})\
         .background_gradient(subset=["Accuracy", "F1 Score", "Precision", "Recall", "AUC"], cmap="Greens")\
         .apply(lambda x: ['background-color: lightgreen' if v == best_auc else '' for v in x] if x.name == 'AUC' else ['' for _ in x], axis=1)
     with st.expander("📊 View All Model Metrics", expanded=True):
