@@ -1,0 +1,232 @@
+# 📊 Streamlit Hospital Model Comparison App
+
+# =====================================================================
+# 📦 Imports and Dependencies
+# =====================================================================
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import logging
+import holidays
+from prophet import Prophet
+import plotly.graph_objects as go
+import openai
+
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    classification_report, accuracy_score, precision_score,
+    recall_score, f1_score, roc_curve, auc, silhouette_score,
+    mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+)
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, IsolationForest
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.cluster import KMeans
+from xgboost import XGBClassifier
+from statsmodels.tsa.arima.model import ARIMA
+
+# Configure logging for debugging and observability
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# =====================================================================
+# 🚀 Main Application Entry Point
+# =====================================================================
+def main():
+    st.set_page_config(page_title="📊 Hospital BI Forecast App", layout="wide")
+    st.title("🏥 Hospital Forecast and Model Evaluation Dashboard")
+
+    # Sidebar instructions for user guidance
+    with st.sidebar:
+        st.header("📘 Section Overview")
+        st.markdown("""
+        This section allows users to:
+        - Upload a hospital CSV dataset or use a default sample
+        - Clean and prepare data for time series analysis
+        - Explore weekly admission trends visually
+        - Forecast patient count using ARIMA and Prophet
+        - Filter by hospital, insurance, and condition
+        - Compare model metrics and visualize anomalies
+        - View dynamic business insights powered by AI
+        """)
+
+    # ============================
+    # 📂 Upload or Load Dataset
+    # ============================
+    st.subheader("📁 Upload Your Dataset or Use Sample")
+    st.markdown("Upload your hospital data with a `Date of Admission` column, or proceed with a built-in demo dataset.")
+    file = st.file_uploader("Upload CSV", type=["csv"])
+
+    if file is not None:
+        df = pd.read_csv(file)
+        st.success("✅ File uploaded successfully!")
+    else:
+        st.error("❌ No file uploaded. Please upload a dataset to continue.")
+        return
+
+    # ============================
+    # 🧹 Data Cleansing
+    # ============================
+    st.subheader("🧹 Data Cleansing & Preparation")
+    df['Date of Admission'] = pd.to_datetime(df['Date of Admission'], errors='coerce')
+    df = df.dropna(subset=['Date of Admission'])
+    df = df[df['Date of Admission'] >= pd.to_datetime("2020-01-01")]
+
+    # Filters
+    if 'Hospital' in df.columns:
+        hospital_filter = st.selectbox("Filter by Hospital", options=['All'] + sorted(df['Hospital'].dropna().unique().tolist()))
+        if hospital_filter != 'All':
+            df = df[df['Hospital'] == hospital_filter]
+
+    if 'Insurance Provider' in df.columns:
+        insurance_filter = st.selectbox("Filter by Insurance Provider", options=['All'] + sorted(df['Insurance Provider'].dropna().unique().tolist()))
+        if insurance_filter != 'All':
+            df = df[df['Insurance Provider'] == insurance_filter]
+
+    if 'Medical Condition' in df.columns:
+        condition_filter = st.selectbox("Filter by Medical Condition", options=['All'] + sorted(df['Medical Condition'].dropna().unique().tolist()))
+        if condition_filter != 'All':
+            df = df[df['Medical Condition'] == condition_filter]
+
+    st.markdown(f"Loaded **{len(df)}** rows with valid admission dates.")
+
+    # ============================
+    # 📈 Weekly Admissions Trend
+    # ============================
+    st.subheader("📊 Weekly Admissions Trend")
+    weekly_df = df.groupby(pd.Grouper(key="Date of Admission", freq="W")).size().reset_index(name="Patients")
+    fig = px.line(weekly_df, x="Date of Admission", y="Patients", markers=True, title="Weekly Patient Admissions")
+    fig.update_layout(xaxis_title="Week", yaxis_title="Number of Patients")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ============================
+    # 📅 Time Series Forecast Section
+    # ============================
+    st.subheader("📅 Forecast Patient Volume")
+
+    granularity = st.selectbox("Choose time granularity", ["D", "W", "M"], format_func=lambda x: {"D": "Daily", "W": "Weekly", "M": "Monthly"}[x])
+    forecast_horizon = st.slider("Select forecast horizon (days)", min_value=7, max_value=60, value=14, step=7)
+
+    ts = df.groupby("Date of Admission").size().rename("Patient Count").to_frame()
+    ts = ts.resample(granularity).sum()
+    ts['Spike'] = ((ts - ts.mean()) / ts.std())['Patient Count'].abs() > 2
+
+    st.line_chart(ts['Patient Count'])
+    st.markdown(f"**🚨 Detected spikes/dips:** {ts['Spike'].sum()} {granularity}-periods")
+
+    # ============================
+    # 🔮 ARIMA Forecast
+    # ============================
+    try:
+        arima_model = ARIMA(ts['Patient Count'], order=(2, 1, 2))
+        arima_fit = arima_model.fit()
+        arima_forecast = arima_fit.forecast(steps=forecast_horizon)
+        st.line_chart(arima_forecast.rename("ARIMA Forecast"))
+    except Exception as e:
+        st.error(f"ARIMA forecast failed: {e}")
+
+    # ============================
+    # 🔮 Prophet Forecast
+    # ============================
+    try:
+        prophet_df = ts[['Patient Count']].reset_index().rename(columns={"Date of Admission": "ds", "Patient Count": "y"})
+        m = Prophet()
+        m.fit(prophet_df)
+        future = m.make_future_dataframe(periods=forecast_horizon, freq=granularity)
+        prophet_forecast_df = m.predict(future)
+        fig2 = m.plot(prophet_forecast_df)
+        st.pyplot(fig2)
+    except Exception as e:
+        st.error(f"Prophet forecast failed: {e}")
+
+    # ============================
+    # 📊 Forecast Model Comparison
+    # ============================
+    actuals = ts['Patient Count'].dropna()[-forecast_horizon:]
+    prophet_preds = prophet_forecast_df.set_index('ds').loc[actuals.index, 'yhat']
+    arima_preds = arima_forecast[:len(actuals)]
+
+    arima_rmse = np.sqrt(mean_squared_error(actuals, arima_preds))
+    prophet_rmse = np.sqrt(mean_squared_error(actuals, prophet_preds))
+    arima_mae = mean_absolute_error(actuals, arima_preds)
+    prophet_mae = mean_absolute_error(actuals, prophet_preds)
+    arima_mape = mean_absolute_percentage_error(actuals, arima_preds)
+    prophet_mape = mean_absolute_percentage_error(actuals, prophet_preds)
+
+    st.markdown("### 📊 Model Performance Comparison")
+    st.write(f"ARIMA - RMSE: {arima_rmse:.2f}, MAE: {arima_mae:.2f}, MAPE: {arima_mape:.2%}")
+    st.write(f"Prophet - RMSE: {prophet_rmse:.2f}, MAE: {prophet_mae:.2f}, MAPE: {prophet_mape:.2%}")
+
+    # ============================
+    # 📈 Side-by-Side Forecast Chart
+    # ============================
+    combined_df = pd.DataFrame({
+        'Actual': actuals,
+        'ARIMA Forecast': arima_preds,
+        'Prophet Forecast': prophet_preds
+    })
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=combined_df.index, y=combined_df['Actual'], mode='lines+markers', name='Actual'))
+    fig.add_trace(go.Scatter(x=combined_df.index, y=combined_df['ARIMA Forecast'], mode='lines+markers', name='ARIMA Forecast'))
+    fig.add_trace(go.Scatter(x=combined_df.index, y=combined_df['Prophet Forecast'], mode='lines+markers', name='Prophet Forecast'))
+
+    spike_dates = ts[ts['Spike']].index.intersection(combined_df.index)
+    fig.add_trace(go.Scatter(
+        x=spike_dates,
+        y=combined_df.loc[spike_dates, 'Actual'],
+        mode='markers',
+        marker=dict(color='red', size=10, symbol='x'),
+        name='Spike/Dip'
+    ))
+
+    holiday_dates = [d for d in combined_df.index if d in holidays.US()]
+    fig.add_trace(go.Scatter(
+        x=holiday_dates,
+        y=combined_df.loc[holiday_dates, 'Actual'],
+        mode='markers',
+        marker=dict(color='orange', size=12, symbol='star'),
+        name='Public Holiday'
+    ))
+
+    fig.update_layout(
+        title='📈 Actual vs Forecasted Admissions with Annotations',
+        xaxis_title='Date',
+        yaxis_title='Patient Count',
+        legend_title='Series',
+        hovermode='x unified'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ============================
+    # 📢 Dynamic Business Narrative (GPT Integration)
+    # ============================
+    st.markdown("### 📢 Key Insights from Forecast")
+    insights_prompt = f"""
+    Analyze patient admission trends and forecasts for the next {forecast_horizon} {granularity.lower()} periods. 
+    Include which model performed better (ARIMA RMSE: {arima_rmse:.2f}, Prophet RMSE: {prophet_rmse:.2f}), 
+    spikes detected: {ts['Spike'].sum()}, holiday overlap: {len(holiday_dates)}.
+    Return executive-style insights in 2–3 bullet points.
+    """
+    if openai.api_key := st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY"):
+        try:
+            from openai import ChatCompletion
+            response = ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a healthcare data analyst generating business insights."},
+                    {"role": "user", "content": insights_prompt}
+                ]
+            )
+            summary = response.choices[0].message.content
+            st.markdown(summary)
+        except Exception as e:
+            st.error(f"❌ Error generating insights: {e}")
+    else:
+        st.warning("🔐 Please set your OpenAI API key in Streamlit secrets to generate AI-based insights.")
+
+# Attach to main
+if __name__ == "__main__":
+    main()
