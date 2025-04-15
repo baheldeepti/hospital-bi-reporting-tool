@@ -232,7 +232,7 @@ def main():
     df['Gender'] = LabelEncoder().fit_transform(df['Gender'].fillna("Unknown"))
     df['Insurance'] = pd.factorize(df['Insurance Provider'])[0]
 
-    features = ['Age', 'Billing Amount', 'Length of Stay', 'Condition', 'Insurance']
+    features = ['Age', 'Billing Amount', 'Length of Stay', 'Condition']
     target = (df['anomaly'] == 1).astype(int)
     
     run_anomaly_visual(df)
