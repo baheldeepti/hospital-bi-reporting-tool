@@ -198,25 +198,29 @@ def main():
         st.download_button("📥 Download Forecast CSV", csv, file_name="forecast_results.csv", mime="text/csv")
 
         st.markdown("### 🧠 AI-Powered Narrative")
-        if openai_available and (openai.api_key := st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")):
-            try:
-                insights_prompt = f"""
-                Analyze patient admission trends and forecasts for the next {forecast_horizon} {horizon_label}. 
-                Include which model performed better (ARIMA RMSE: {arima_rmse:.2f}, Prophet RMSE: {prophet_rmse:.2f}), 
-                spikes detected: {ts['Spike'].sum()}, holiday overlap: {len(holiday_dates)}. Return executive-style insights in 2–3 bullet points.
-                """
-                response = ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
-                        {"role": "user", "content": insights_prompt}
-                    ]
-                )
-                st.markdown(response.choices[0].message.content)
-            except Exception as e:
-                st.error(f"❌ GPT narrative failed: {e}")
-        else:
-            st.info("🧠 AI insights available with OpenAI key configured in secrets or session.")
+        if openai_available:
+            api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
+            if api_key:
+                openai.api_key = api_key
+                try:
+                    insights_prompt = f"""
+                    Analyze patient admission trends and forecasts for the next {forecast_horizon} {horizon_label}. 
+                    Include which model performed better (ARIMA RMSE: {arima_rmse:.2f}, Prophet RMSE: {prophet_rmse:.2f}), 
+                    spikes detected: {ts['Spike'].sum()}, holiday overlap: {len(holiday_dates)}. Return executive-style insights in 2–3 bullet points.
+                    """
+                    response = ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You are a healthcare analyst writing business summaries."},
+                            {"role": "user", "content": insights_prompt}
+                        ]
+            )
+            st.markdown(response.choices[0].message.content)
+        except Exception as e:
+            st.error(f"❌ GPT narrative failed: {e}")
+    else:
+        st.info("🧠 AI insights available with OpenAI key configured in secrets or session.")
+
 
 # =====================================================================
 # ▶️ Run the App
