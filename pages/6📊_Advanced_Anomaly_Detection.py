@@ -155,7 +155,10 @@ top_features = feature_scores.head(10).index.tolist()
 # -- Feature Importance Chart
 st.subheader("🧠 Top 10 Predictive Features")
 fig, ax = plt.subplots()
-feature_scores.head(10).plot(kind='barh', ax=ax)
+top_10 = feature_scores.head(10).sort_values()
+top_10.plot(kind='barh', ax=ax)
+for i, (feature, value) in enumerate(top_10.items()):
+    ax.text(value, i, f'{value:.3f}', va='center', ha='left')
 ax.set_title("Feature Importances (XGBoost)")
 st.pyplot(fig)
 
