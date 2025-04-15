@@ -232,7 +232,7 @@ def main():
     df['Gender'] = LabelEncoder().fit_transform(df['Gender'].fillna("Unknown"))
     df['Insurance'] = pd.factorize(df['Insurance Provider'])[0]
     df['Cost Per Day'] = df['Billing Amount'] / (df['Length of Stay'] + 1)
-   df['Is Weekend Admission'] = df['Date of Admission'].dt.weekday >= 5
+    df['Is Weekend Admission'] = df['Date of Admission'].dt.weekday >= 5
 
 
     features = ['Age', 'Billing Amount', 'Length of Stay', 'Cost Per Day','Is Weekend Admission']
