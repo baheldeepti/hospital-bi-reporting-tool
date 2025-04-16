@@ -9,6 +9,7 @@ import shap
 import plotly.express as px
 import openai
 import time
+from xgboost import XGBClassifier
 
 from sklearn.ensemble import (
     IsolationForest, RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
