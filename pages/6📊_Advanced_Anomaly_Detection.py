@@ -146,7 +146,7 @@ scaler = StandardScaler()
 X_train_scaled_all = scaler.fit_transform(X_train_all)
 X_test_scaled_all = scaler.transform(X_test_all)
 
-model = XGBClassifier(eval_metric='logloss', use_label_encoder=False)
+model = XGBClassifier(eval_metric='logloss')
 model.fit(X_train_scaled_all, y_train)
 
 importances = model.feature_importances_
@@ -189,7 +189,7 @@ if selected:
         "Logistic Regression": LogisticRegression(),
         "Random Forest": RandomForestClassifier(random_state=42),
         "Gradient Boosting": GradientBoostingClassifier(random_state=42),
-        "XGBoost": XGBClassifier(eval_metric='logloss', use_label_encoder=False),
+        "XGBoost": XGBClassifier(eval_metric='logloss'),
         "SVM (RBF)": SVC(probability=True, random_state=42),
         "Naive Bayes": GaussianNB(),
         "K-Nearest Neighbors": KNeighborsClassifier(),
