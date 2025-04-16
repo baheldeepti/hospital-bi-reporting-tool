@@ -30,14 +30,14 @@ with st.expander("ℹ️ How It Works", expanded=False):
 
 # 🔗 Navigation Links
 # 🔗 Navigation Links
-st.markdown("### 🔗 Navigate to:")
+#st.markdown("### 🔗 Navigate to:")
 
-st.page_link("pages/1_Dashboard.py", label="📊 Dashboard")
-st.page_link("pages/2_Chat_Assistant.py", label="🗨️ Chat Assistant")
-st.page_link("pages/3_Chat_Assistant_Feature_Overview.py", label="🤖 Chat Assistant Features")
-st.page_link("pages/4_Dashboard_Feature_Overview.py", label="🧭 Dashboard Features")
-st.page_link("pages/5_Time_Series_Forecasting.py", label="📈 Time Series Forecasting")
-st.page_link("pages/6_Advanced_Anomaly_Detection.py", label="🧠 Advanced Anomaly Detection")
+#st.page_link("pages/1_Dashboard.py", label="📊 Dashboard")
+#st.page_link("pages/2_Chat_Assistant.py", label="🗨️ Chat Assistant")
+#st.page_link("pages/3_Chat_Assistant_Feature_Overview.py", label="🤖 Chat Assistant Features")
+#st.page_link("pages/4_Dashboard_Feature_Overview.py", label="🧭 Dashboard Features")
+#st.page_link("pages/5_Time_Series_Forecasting.py", label="📈 Time Series Forecasting")
+#st.page_link("pages/6_Advanced_Anomaly_Detection.py", label="🧠 Advanced Anomaly Detection")
 
 # 👩‍💻 About the Developer
 st.markdown("### 👩‍💻 About the Developer")
