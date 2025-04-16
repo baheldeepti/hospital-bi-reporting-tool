@@ -56,10 +56,4 @@ This document outlines the current capabilities of the **Hospital Dashboard** pa
 - Forecasting widget integration (Prophet/ARIMA).
     """)
 
-# 🔗 Page Navigation
-st.markdown("---")
-st.markdown("### 🔗 Navigate to Other Pages")
 
-st.page_link("pages/1_📊_Dashboard.py", label="📊 Dashboard", icon="📊")
-st.page_link("pages/2_🤖_Chat_Assistant.py", label="🤖Chat Assistant")
-st.page_link("pages/3__Chat_Assistant_Feature_Overview.py", label="📄 Chat Assistant Feature Overview")
