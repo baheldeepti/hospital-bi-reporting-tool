@@ -171,6 +171,9 @@ shap_values = explainer(X_test_scaled_all)
 
 shap.summary_plot(shap_values, X_test_all, plot_type="bar", show=False)
 fig = plt.gcf()
+ax.set_title("SHAP Feature Importance (Top 10)")
+ax.set_xlabel("Mean SHAP Value (Impact on Model Output)")
+ax.set_ylabel("Features")
 st.pyplot(fig)
 
 # -- Model Comparison Setup
