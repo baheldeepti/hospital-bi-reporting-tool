@@ -54,8 +54,3 @@ This document outlines all current capabilities of the **Hospital Chat Assistant
 - Schedule automatic reporting.
 - Search/filter saved summaries.
 
----
-
-📁 **Location**: This functionality is defined in `pages/2_🤖_Chat_Assistant.py`
-
-For installation or deployment help, see `README.md` or contact the [project maintainer](https://github.com/baheldeepti).
