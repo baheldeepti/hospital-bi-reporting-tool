@@ -44,8 +44,3 @@ This document outlines the current capabilities of the **Hospital Dashboard** pa
 - Custom filter memory across sessions.
 - Forecasting widget integration (Prophet/ARIMA).
 
----
-
-📁 **Location**: This functionality is implemented in `pages/1_📊_Dashboard.py`
-
-For data upload help or dashboard customization, refer to `README.md` or contact the [project maintainer](https://github.com/baheldeepti).
