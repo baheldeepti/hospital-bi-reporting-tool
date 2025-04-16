@@ -31,11 +31,12 @@ with st.expander("ℹ️ How It Works", expanded=False):
 # 🔗 Navigation Links
 st.markdown("### 🔗 Navigate to:")
 
-st.page_link("pages/1_📊_Dashboard.py", label="📊 Dashboard")
-st.page_link("pages/2_🤖_Chat_Assistant.py", label="🤖 Chat Assistant")
-st.page_link("pages/4_Dashboard_Feature_Overview.py", label="📘 Dashboard Feature Overview")
-st.page_link("pages/3__Chat_Assistant_Feature_Overview.py", label="📄 Chat Assistant Feature Overview")
-
+st.page_link("pages/1_📊_Dashboard.py")
+st.page_link("pages/2_🗨️_Chat_Assistant.py")
+st.page_link("pages/3__🤖_Chat_Assistant_Feature_Overview.py")
+st.page_link("pages/4_🧭_Dashboard_Feature_Overview.py")
+st.page_link("pages/5_📈_Time_Series_Forecasting.py")
+st.page_link(pages/6_🧠_Advanced_Anomaly_Detection.py")
 # 👩‍💻 About the Developer
 st.markdown("### 👩‍💻 About the Developer")
 st.markdown("""
@@ -43,3 +44,27 @@ Built by **Deepti Bahel**, this app combines data engineering, AI, and intuitive
 
 [Connect on LinkedIn](https://www.linkedin.com/in/deepti-bahel/)
 """)
+st.markdown("""
+<style>
+footer {
+    visibility: hidden;
+}
+footer:after {
+    content:'Powered by Streamlit, OpenAI & LangChain';
+    visibility: visible;
+    display: block;
+    text-align: center;
+    padding: 10px;
+    color: gray;
+    font-size: 0.85em;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+---
+<div style='text-align: center; color: grey; font-size: 0.9em;'>
+  🔍 Visit the app anytime at <a href='https://hospital-bi-tool.streamlit.app/' target='_blank'>hospital-bi-tool.streamlit.app</a><br>
+  Powered by <strong>OpenAI</strong> and <strong>LangChain</strong>
+</div>
+""", unsafe_allow_html=True)
