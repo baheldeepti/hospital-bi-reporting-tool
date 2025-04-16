@@ -263,6 +263,9 @@ if selected:
     )
     shap.summary_plot(shap_values_top, X_test, plot_type="dot", show=False)
     fig = plt.gcf()
+
+    ax.set_xlabel("Mean SHAP Value (Impact on Model Output)")
+    ax.set_ylabel("Features")
     st.pyplot(fig)
 
     # -- SHAP in Plain English
