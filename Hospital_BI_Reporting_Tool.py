@@ -36,7 +36,7 @@ st.page_link("pages/2_🗨️_Chat_Assistant.py")
 st.page_link("pages/3__🤖_Chat_Assistant_Feature_Overview.py")
 st.page_link("pages/4_🧭_Dashboard_Feature_Overview.py")
 st.page_link("pages/5_📈_Time_Series_Forecasting.py")
-st.page_link(pages/6_🧠_Advanced_Anomaly_Detection.py")
+st.page_link("pages/6_🧠_Advanced_Anomaly_Detection.py")
 # 👩‍💻 About the Developer
 st.markdown("### 👩‍💻 About the Developer")
 st.markdown("""
