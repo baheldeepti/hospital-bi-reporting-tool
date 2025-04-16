@@ -233,10 +233,7 @@ def render_glossary():
         matches = [f"- **{k}**: {v}" for k, v in glossary.items() if search in k.lower()]
         st.markdown("\n".join(matches) if matches else "❌ No match found.")
 
-# 🔗 Footer
-def render_footer():
-    st.markdown("---")
-    st.markdown("Made with ❤️ by Deepti Bahel | Powered by Streamlit + LangChain + Altair")
+
 
 
 # 🚀 MAIN FLOW
@@ -253,4 +250,4 @@ if st.session_state["main_df"] is not None:
     render_advanced_charts(filtered_df)
     render_logs()
     render_glossary()
-    render_footer()
+    #render_footer()
