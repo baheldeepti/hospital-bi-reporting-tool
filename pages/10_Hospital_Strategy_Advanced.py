@@ -7,7 +7,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 from pulp import LpProblem, LpVariable, lpSum, LpMinimize, LpBinary, LpStatus, value
 import openai
-openai.api_key = st.secrets["openai_api_key"]
+openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
 
 
 # ----------------------
