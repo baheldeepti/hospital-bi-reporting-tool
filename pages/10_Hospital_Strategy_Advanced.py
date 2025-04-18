@@ -59,7 +59,7 @@ with st.expander("⚙️ Simulate Optimization Thresholds"):
     sim_weekend = st.slider("Max % Weekend Admissions", 0.0, 1.0, 0.2, step=0.05)
     sim_longstay = st.slider("Max % Long Stays", 0.0, 1.0, 0.1, step=0.05)
     sim_anomaly = st.slider("Max % Anomaly", 0.0, 1.0, 0.05, step=0.01)
-    sim_min_patients = st.slider("Min Patients Selected", 0, 100, 70, step=5)
+    sim_min_patients = st.slider("Min Patients Selected", 0, 1000, 90, step=5)
 
 # ----------------------
 # 🧠 Optimization Comparison
@@ -243,23 +243,35 @@ with st.container():
 # ----------------------
 # 🤖 AI-Powered Suggestions (Dynamic with OpenAI)
 # ----------------------
-
-
 st.subheader("🤖 AI Recommendations from ChatGPT")
+st.write("🔐 Secret key present:", "openai_api_key" in st.secrets)
+
 openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
 # Secure key storage in .streamlit/secrets.toml
 
 prompt = f"""
-You are an AI healthcare strategy advisor. Based on the following strategy data:
+You are an AI healthcare strategy advisor analyzing hospital patient optimization strategies. Based on the following model comparison and selected strategy data, provide specific, actionable recommendations to hospital leadership:
 
-- Strategy Chosen: {top['Strategy']}
-- Total Cost: {top['Total Cost']}
-- % Anomalies: {top['% Anomaly']}
-- % Weekend: {top['% Weekend']}
-- % Long Stay: {top['% Long Stay']}
+📊 Strategy Comparison Metrics:
+- IP: Cost = ${comparison_df[comparison_df['Strategy'] == 'IP']['Total Cost'].values[0]:,.0f}, Weekend % = {comparison_df[comparison_df['Strategy'] == 'IP']['% Weekend'].values[0]:.2f}, Long Stay % = {comparison_df[comparison_df['Strategy'] == 'IP']['% Long Stay'].values[0]:.2f}, Anomaly % = {comparison_df[comparison_df['Strategy'] == 'IP']['% Anomaly'].values[0]:.2f}
+- LP: Cost = ${comparison_df[comparison_df['Strategy'] == 'LP']['Total Cost'].values[0]:,.0f}, Weekend % = {comparison_df[comparison_df['Strategy'] == 'LP']['% Weekend'].values[0]:.2f}, Long Stay % = {comparison_df[comparison_df['Strategy'] == 'LP']['% Long Stay'].values[0]:.2f}, Anomaly % = {comparison_df[comparison_df['Strategy'] == 'LP']['% Anomaly'].values[0]:.2f}
+- Greedy: Cost = ${comparison_df[comparison_df['Strategy'] == 'Greedy']['Total Cost'].values[0]:,.0f}, Weekend % = {comparison_df[comparison_df['Strategy'] == 'Greedy']['% Weekend'].values[0]:.2f}, Long Stay % = {comparison_df[comparison_df['Strategy'] == 'Greedy']['% Long Stay'].values[0]:.2f}, Anomaly % = {comparison_df[comparison_df['Strategy'] == 'Greedy']['% Anomaly'].values[0]:.2f}
 
-Suggest specific, actionable recommendations for hospital leadership to reduce costs while improving patient care. Mention strategies for discharge planning, anomaly management, and weekend admission control.
+✅ Selected Optimal Strategy:
+- Strategy: {top['Strategy']}
+- Total Cost: ${top['Total Cost']:,.0f}
+- % Weekend: {top['% Weekend']:.2f}%
+- % Long Stay: {top['% Long Stay']:.2f}%
+- % Anomaly: {top['% Anomaly']:.2f}%
+
+🔍 Objective:
+- Recommend strategic actions to reduce hospital costs
+- Improve patient care outcomes by minimizing long stays, weekend admissions, and anomaly cases
+- Consider the trade-offs between different models (IP, LP, Greedy)
+
+Deliver your insights in concise, executive-friendly bullet points.
 """
+
 
 with st.spinner("Generating AI-powered recommendations..."):
     try:
