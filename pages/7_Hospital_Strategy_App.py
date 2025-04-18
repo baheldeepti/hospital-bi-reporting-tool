@@ -159,7 +159,7 @@ except Exception as e:
 # ----------------------
 def apply_strategies(df):
     opt_df = df[['Billing Amount', 'Is Weekend', 'Is Long Stay', 'anomaly_prob', 'Date of Admission', 'Gender', 'Insurance Provider']].dropna().sample(n=100, random_state=42)
-    opt_df['LP_Selected'] = 0
+    opt_df['LP_Selected'] = result.x.round().astype(int)
     opt_df.loc[opt_df.sort_values(by='Billing Amount').head(sim_min_patients).index, 'LP_Selected'] = 1
     opt_df['Greedy_Selected'] = 0
     greedy_sorted = opt_df.sort_values(by='Billing Amount').head(sim_min_patients).index
