@@ -284,5 +284,4 @@ with st.expander("🛠️ App Help & Guidance"):
     - **AI Recommendations**: GPT-4 generated strategy advice based on your dataset.
     - **Drilldowns**: Patient-level data for each strategy.
     - **Charts**: Strategy comparison, pie distribution, and metric correlation.
-    """)        st.markdown(f"- {rec}")
-
+    """)    
