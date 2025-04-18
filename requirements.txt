@@ -9,6 +9,8 @@ fpdf>=1.7.2
 kneed
 tabulate
 shap
+pulp
+
 # Streamlit Chat UI
 streamlit-chat>=0.0.2
 
