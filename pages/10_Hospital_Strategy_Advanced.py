@@ -244,9 +244,8 @@ with st.container():
 # 🤖 AI-Powered Suggestions (Dynamic with OpenAI)
 # ----------------------
 st.subheader("🤖 AI Recommendations from ChatGPT")
-st.write("🔐 Secret key present:", "openai_api_key" in st.secrets)
 
-openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
+openai.api_key =  st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")# Secure key storage in .streamlit/secrets.toml
 # Secure key storage in .streamlit/secrets.toml
 
 prompt = f"""
