@@ -240,8 +240,8 @@ st.dataframe(recommend_df, use_container_width=True)
 
 
 st.subheader("🤖 AI Recommendations from ChatGPT")
-
-openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
+openai.api_key =  st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")#
+# openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
 
 prompt = f"""
 You are an AI healthcare strategy advisor. Based on the following strategy data:
