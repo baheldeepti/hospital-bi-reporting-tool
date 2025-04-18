@@ -7,7 +7,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 from pulp import LpProblem, LpVariable, lpSum, LpMinimize, LpBinary, LpStatus, value
 import openai
-openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
+# openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
 
 
 # ----------------------
@@ -246,8 +246,8 @@ with st.container():
 
 
 st.subheader("🤖 AI Recommendations from ChatGPT")
-
 openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
+# Secure key storage in .streamlit/secrets.toml
 
 prompt = f"""
 You are an AI healthcare strategy advisor. Based on the following strategy data:
