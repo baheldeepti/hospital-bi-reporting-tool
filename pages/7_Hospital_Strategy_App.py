@@ -325,8 +325,4 @@ st.download_button("📥 Download Billing Trend Data", data=csv_data.to_csv(inde
 
 
 
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-kpi1.metric("Top Strategy", top["Strategy"])
-kpi2.metric("Total Cost", top["Total Cost"])
-kpi3.metric("% Anomalies", top["% Anomalies"])
-kpi4.metric("Constraints Met", int(top["Constraints Met"]))
+
