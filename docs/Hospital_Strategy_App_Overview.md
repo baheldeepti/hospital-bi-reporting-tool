@@ -88,6 +88,8 @@ Then, from what’s left, it picks the cheapest.
 
 ---
 
+
+
 ### 🧠 Other Optimization Models You Could Try
 If you want to level up from LP, here are a few more models (also explained simply):
 
@@ -110,8 +112,19 @@ Very cool, but takes longer 🧬
 
 ---
 
-Each model balances: 💵 Cost ⏳ Speed ✅ Accuracy
-So you can pick one based on how smart or fast your hospital system wants to be!
+**💡 Choosing Just One More to Add?**
+
+Here’s a comparison of the 3 bonus models:
+
+| Model               | What It Does                              | Pros                        | Cons                            | Best For             |
+|--------------------|-------------------------------------------|-----------------------------|----------------------------------|----------------------|
+| 🔹 Integer Programming (IP) | Picks full patients (yes/no only)      | Realistic, trustworthy       | Slightly slower                  | ✅ Best next choice  |
+| 🔸 Quadratic Programming (QP) | Considers patient pair interactions   | Smarter decisions possible   | Complex, harder to explain       | 🤔 Advanced setups   |
+| 🔻 Genetic Algorithm (GA)   | Evolves better solutions over time   | Flexible, creative outcomes  | Slow and non-repeatable          | 🧬 Research testing  |
+
+**Recommendation? Add Integer Programming (IP)**. It’s a natural next step from LP, and helps avoid fractional patient picks 😅.
+
+Each model balances: 💵 Cost ⏳ Speed ✅ Accuracy — so choose based on what your team values most!
 
 The app compares 3 ways to pick patients:
 - **LP (Linear Programming)**: Smart math to minimize cost with constraints
@@ -148,13 +161,11 @@ The AI sees the strategy and data, then suggests actions a hospital could take.
 ---
 
 
+
 ## ✅ Conclusion
 This app helps hospital teams make **data-driven decisions** and plan better strategies using:
 - Math 🧮
 - AI 🤖
 - Charts 📈
 
-All wrapped in an easy-to-use Streamlit interface.
-
-Let me know if you want a PDF or tutorial video next! 🎥
 
