@@ -242,20 +242,28 @@ with st.container():
 # ----------------------
 # 🤖 AI-Powered Suggestions
 # ----------------------
-st.subheader("🤖 AI Recommendations from ChatGPT")
-openai.api_key = st.secrets.get("openai_api_key")
-prompt = f"""
-You are a healthcare optimization expert. Based on the following results:
-- Strategy: {top['Strategy']}
-- Total Cost: ${top['Total Cost']:.2f}
-- % Weekend: {top['% Weekend']:.2f}%
-- % Long Stay: {top['% Long Stay']:.2f}%
-- % Anomaly: {top['% Anomaly']:.2f}%
+# ----------------------
+# 🤖 AI-Powered Suggestions (Dynamic with OpenAI)
+# ----------------------
 
-Provide data-driven recommendations to reduce hospital billing while maintaining care quality.
+
+st.subheader("🤖 AI Recommendations from ChatGPT")
+
+openai.api_key = st.secrets.get("openai_api_key")  # Secure key storage in .streamlit/secrets.toml
+
+prompt = f"""
+You are an AI healthcare strategy advisor. Based on the following strategy data:
+
+- Strategy Chosen: {top['Strategy']}
+- Total Cost: {top['Total Cost']}
+- % Anomalies: {top['% Anomalies']}
+- % Weekend: {top['% Weekend']}
+- % Long Stay: {top['% Long Stay']}
+
+Suggest specific, actionable recommendations for hospital leadership to reduce costs while improving patient care. Mention strategies for discharge planning, anomaly management, and weekend admission control.
 """
 
-with st.spinner("Generating recommendations..."):
+with st.spinner("Generating AI-powered recommendations..."):
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
@@ -263,10 +271,11 @@ with st.spinner("Generating recommendations..."):
             temperature=0.7,
             max_tokens=300
         )
-        ai_suggestions = response.choices[0].message.content.strip()
-        st.info(ai_suggestions)
+        ai_recommendation = response.choices[0].message.content.strip()
+        st.info(ai_recommendation)
     except Exception as e:
-        st.error(f"❌ Failed to generate recommendations: {e}")
+        st.error(f"❌ Failed to fetch AI recommendations: {e}")
+
 
 # ----------------------
 # 📥 Download Options
