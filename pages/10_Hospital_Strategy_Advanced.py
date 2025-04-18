@@ -255,7 +255,7 @@ Provide data-driven recommendations to reduce hospital billing while maintaining
 
 with st.spinner("Generating recommendations..."):
     try:
-        response = openai.chat.completions..create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
