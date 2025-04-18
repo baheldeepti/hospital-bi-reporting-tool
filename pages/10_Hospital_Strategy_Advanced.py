@@ -239,9 +239,7 @@ with st.container():
     for rec in business_recs:
         st.markdown(f"- {rec}")
 
-# ----------------------
-# 🤖 AI-Powered Suggestions
-# ----------------------
+
 # ----------------------
 # 🤖 AI-Powered Suggestions (Dynamic with OpenAI)
 # ----------------------
@@ -256,7 +254,7 @@ You are an AI healthcare strategy advisor. Based on the following strategy data:
 
 - Strategy Chosen: {top['Strategy']}
 - Total Cost: {top['Total Cost']}
-- % Anomalies: {top['% Anomalies']}
+- % Anomalies: {top['% Anomaly']}
 - % Weekend: {top['% Weekend']}
 - % Long Stay: {top['% Long Stay']}
 
