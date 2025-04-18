@@ -208,22 +208,16 @@ max_weekend = st.sidebar.slider("% Weekend Admissions Allowed", 0, 50, 20)
 max_longstay = st.sidebar.slider("% Long Stays Allowed", 0, 30, 10)
 
 recommend_df = recommend_strategy(opt_df, budget, max_anomaly, max_weekend, max_longstay)
-st.subheader("📋 Strategy Recommendation Summary")
-st.dataframe(recommend_df, use_container_width=True)
-
-# KPI Summary
-
-# Demographic Cards
-if not patient_view.empty:
-    demo1, demo2 = st.columns(2)
-    female_pct = (patient_view['Gender'] == 'Female').mean() * 100
-    avg_age = df[df['Gender'].isin(patient_view['Gender'])]['Age'].mean()
-    demo1.metric("% Female Patients", f"{female_pct:.2f}%")
-    demo2.metric("Average Age", f"{avg_age:.1f} years")
-
-# ----------------------
+#top strategy
+top = recommend_df.iloc[0]
+# 📊 KPI Summary
+st.subheader("📊 Strategy KPIs")
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+kpi1.metric("Top Strategy", top["Strategy"])
+kpi2.metric("Total Cost", top["Total Cost"])
+kpi3.metric("% Anomalies", top["% Anomalies"])
+kpi4.metric("Constraints Met", int(top["Constraints Met"]))
 # 💡 Business Recommendations
-# ----------------------
 st.subheader("💡 Strategic Recommendations for Leadership")
 st.markdown(f"""
 **Top Strategy Chosen:** `{top['Strategy']}`
@@ -235,10 +229,15 @@ st.markdown(f"""
 - Consider enhancing anomaly detection systems to prevent financial leakage.
 - Periodically re-evaluate strategies with updated patient and billing data.
 """)
+
+st.subheader("📋 Strategy Recommendation Summary")
+st.dataframe(recommend_df, use_container_width=True)
+
+
 # ----------------------
 # 🤖 AI-Powered Suggestions (Dynamic with OpenAI)
 # ----------------------
-import openai
+
 
 st.subheader("🤖 AI Recommendations from ChatGPT")
 
@@ -258,7 +257,7 @@ Suggest specific, actionable recommendations for hospital leadership to reduce c
 
 with st.spinner("Generating AI-powered recommendations..."):
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
@@ -324,7 +323,8 @@ st.pyplot(fig)
 csv_data = grouped.reset_index() if group_by != "None" else billing_over_time[['Date', 'Billing Amount']]
 st.download_button("📥 Download Billing Trend Data", data=csv_data.to_csv(index=False), file_name="billing_trend_data.csv", mime="text/csv")
 
-top = recommend_df.iloc[0]
+
+
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 kpi1.metric("Top Strategy", top["Strategy"])
 kpi2.metric("Total Cost", top["Total Cost"])
