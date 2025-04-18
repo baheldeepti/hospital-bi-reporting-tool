@@ -55,6 +55,64 @@ It shows you:
 
 ## 🧠 4. Strategy Options
 
+Let’s break down each strategy like you’re a 15-year-old trying to save money on snacks 🍫:
+
+### 🔷 Linear Programming (LP)
+Think of LP as a **math wizard** that tries to pick the best mix of patients to treat —
+but only if they meet some rules (like not too many on weekends or not too many long stays).
+
+You give it:
+- A cost for each patient
+- Rules like “no more than 10% anomalies”
+- A goal like “select 70 patients”
+
+It gives you:
+- The cheapest combination that meets the rules ✅
+
+It’s like trying to pick a meal at a cafeteria that’s tasty 🍕, healthy 🥦, and cheap 🤑 — all at once!
+
+### 🔶 Greedy
+Greedy is simple: just grab the **cheapest patients first**.
+
+No fancy rules — just sort patients by cost and pick the top 70.
+It’s quick, but it might ignore weekend admissions or anomalies.
+
+### 🔸 Heuristic
+Heuristic is like saying: “Avoid the weird stuff.”
+
+It skips:
+- Anomalies (really strange bills)
+- Weekend admissions (usually more expensive)
+
+Then, from what’s left, it picks the cheapest.
+
+---
+
+### 🧠 Other Optimization Models You Could Try
+If you want to level up from LP, here are a few more models (also explained simply):
+
+#### 🔹 Integer Programming
+Like LP, but it makes **yes/no decisions** (select or don’t select).
+LP might pick 0.6 of a patient 😅 — this one only picks whole people.
+
+#### 🔸 Quadratic Programming (QP)
+Instead of just cost, it also considers **interactions** — like:
+> “If we admit both Patient A and B, the cost goes down together.”
+
+It’s a bit like bundling phone plans 📱 or choosing roommates wisely.
+
+#### 🔻 Genetic Algorithms
+This one tries to evolve good answers — like survival of the fittest.
+
+It tries a bunch of patient combos, keeps the best, mixes them, and tries again.
+
+Very cool, but takes longer 🧬
+
+---
+
+Each model balances: 💵 Cost ⏳ Speed ✅ Accuracy
+So you can pick one based on how smart or fast your hospital system wants to be!
+
 The app compares 3 ways to pick patients:
 - **LP (Linear Programming)**: Smart math to minimize cost with constraints
 - **Greedy**: Just pick the cheapest patients
@@ -89,15 +147,6 @@ The AI sees the strategy and data, then suggests actions a hospital could take.
 
 ---
 
-## 🔐 8. Security Tip
-For AI to work, users need to add their OpenAI key in a secret file.
-
-```toml
-# In .streamlit/secrets.toml
-openai_api_key = "your-key-here"
-```
-
----
 
 ## ✅ Conclusion
 This app helps hospital teams make **data-driven decisions** and plan better strategies using:
@@ -105,4 +154,7 @@ This app helps hospital teams make **data-driven decisions** and plan better str
 - AI 🤖
 - Charts 📈
 
+All wrapped in an easy-to-use Streamlit interface.
+
+Let me know if you want a PDF or tutorial video next! 🎥
 
