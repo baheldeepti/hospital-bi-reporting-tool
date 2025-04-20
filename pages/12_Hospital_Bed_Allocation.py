@@ -116,14 +116,14 @@ admitted_df = filtered_df.loc[admitted].copy()
 # --------------------------
 tab1, tab2, tab3, tab4 = st.tabs(["📈 KPI Summary", "📊 Trend Analysis", "👩‍⚕️ Patient Drill-down", "💡 AI Strategy"])
 
-with tab1:
-    with st.expander("📌 Executive Summary"):
-        st.markdown(f"""
-        - **Scenario Applied**: `{scenario}`  
-        - **Beds Used**: {len(admitted)} / {total_beds}  
-        - **Avg LOS**: {admitted_df['Length_of_Stay'].mean():.2f} days  
-        - **Top Condition**: {admitted_df['Medical Condition'].value_counts().idxmax()}
-        """)
+with st.expander("📌 Executive Summary"):
+    top_condition = admitted_df['Medical Condition'].value_counts().idxmax() if not admitted_df['Medical Condition'].dropna().empty else "N/A"
+    st.markdown(f"""
+    - **Scenario Applied**: `{scenario}`  
+    - **Beds Used**: {len(admitted)} / {total_beds}  
+    - **Avg LOS**: {admitted_df['Length_of_Stay'].mean():.2f} days  
+    - **Top Condition**: {top_condition}
+    """)
 
     kpi1, kpi2, kpi3 = st.columns(3)
     kpi1.metric("Beds Used", len(admitted), f"of {total_beds}")
