@@ -249,19 +249,31 @@ else:
 st.subheader("\U0001F52C Model Performance & ROC Comparison")
 
 # --- Model Comparison (Corrected) ---
+from sklearn.metrics import (
+    accuracy_score, f1_score, precision_score, recall_score,
+    roc_curve, auc
+)
+from sklearn.preprocessing import label_binarize
+from sklearn.multiclass import OneVsRestClassifier
+
+# Prepare Data
 df['Stay_Class'] = df['Stay_Category_Custom'].map({'Short': 0, 'Medium': 1, 'Long': 2, 'Very Long': 3})
 features = ['Medical Condition', 'Billing Amount', 'ICD_Chapter', 'Is_Chronic', 'Billing_Anomaly']
 X = df[features]
 y = df['Stay_Class']
 X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.2, random_state=42)
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
 
+# Binarize for ROC
 y_train_bin = label_binarize(y_train, classes=[0, 1, 2, 3])
 y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
 n_classes = y_test_bin.shape[1]
 
+# Scale Features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Models
 models = {
     "XGBoost": XGBClassifier(objective='multi:softprob', num_class=4, eval_metric='mlogloss', use_label_encoder=False, random_state=42),
     "Random Forest": RandomForestClassifier(random_state=42),
@@ -273,23 +285,27 @@ models = {
 results = []
 plt.figure(figsize=(10, 7))
 
-for name, clf in models.items():
-    ovr = OneVsRestClassifier(clf)
-    ovr.fit(X_train_scaled, y_train_bin)
-    y_score = ovr.predict_proba(X_test_scaled)
-
+for name, base_model in models.items():
+    clf = OneVsRestClassifier(base_model)
+    clf.fit(X_train_scaled, y_train_bin)
+    
+    y_score = clf.predict_proba(X_test_scaled)  # shape: (n_samples, n_classes)
+    y_pred_bin = clf.predict(X_test_scaled)     # shape: (n_samples, n_classes)
+    y_pred = np.argmax(y_score, axis=1)         # convert to single-label prediction
+    
+    # ROC Curves
     fpr, tpr, roc_auc = {}, {}, {}
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_test_bin[:, i], y_score[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
-
-    avg_auc = np.mean(list(roc_auc.values()))
+    
     mean_fpr = np.linspace(0, 1, 100)
     mean_tpr = np.mean([np.interp(mean_fpr, fpr[i], tpr[i]) for i in range(n_classes)], axis=0)
-
+    avg_auc = np.mean(list(roc_auc.values()))
+    
     plt.plot(mean_fpr, mean_tpr, label=f'{name} (Avg AUC = {avg_auc:.2f})')
 
-    y_pred = np.argmax(y_score, axis=1)
+    # Metrics
     results.append({
         'Model': name,
         'Accuracy': accuracy_score(y_test, y_pred),
@@ -299,18 +315,20 @@ for name, clf in models.items():
         'ROC AUC': avg_auc
     })
 
+# Plot settings
 plt.plot([0, 1], [0, 1], 'k--')
-plt.title('ROC Curve Comparison (Multi-Class)')
+plt.title('ROC Curve Comparison (Multi-Class OvR)')
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.legend(loc='lower right')
 plt.grid(True)
 st.pyplot(plt.gcf())
 
+# Results table
 results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
 st.subheader("📋 Model Performance Table")
 st.dataframe(results_df)
-st.dataframe(report_df.style.background_gradient(cmap='Greens'))
+
 
 # --- GPT Summary ---
 st.subheader("\U0001F4AC GPT Summary of Insights")
