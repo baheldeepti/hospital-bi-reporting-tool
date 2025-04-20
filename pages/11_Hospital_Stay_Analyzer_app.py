@@ -232,20 +232,21 @@ else:
 
 # --- Model Comparison ---
 st.subheader("\U0001F916 Model Comparison")
-
-# --- Compare Multiple Models ---
 st.markdown("### \U0001F5A5️ Evaluating Multiple Models")
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
-from sklearn.linear_model import LogisticRegression
 
+# Features and Labels
+df['Stay_Class'] = df['Stay_Category_Custom'].map({'Short': 0, 'Medium': 1, 'Long': 2, 'Very Long': 3})
 features = ['Medical Condition', 'Billing Amount', 'ICD_Chapter', 'Is_Chronic', 'Billing_Anomaly']
 X = df[features]
 y = df['Stay_Class']
+
+# Split and Scale
 X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.2, random_state=42)
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
+# Model Dictionary
 models = {
     "XGBoost": XGBClassifier(objective='multi:softprob', num_class=4, eval_metric='mlogloss', use_label_encoder=False, random_state=42),
     "Random Forest": RandomForestClassifier(random_state=42),
@@ -254,36 +255,18 @@ models = {
     "AdaBoost": AdaBoostClassifier(random_state=42)
 }
 
+# Store Results
 results = []
-for name, model in models.items():
-    model.fit(X_train_scaled, y_train)
-    y_pred = model.predict(X_test_scaled)
-    acc = accuracy_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred, average='weighted')
-    results.append({"Model": name, "Accuracy": acc, "F1-Score": f1})
-
-# Display sorted model results first
-results_df = pd.DataFrame(results).sort_values(by="F1 Score", ascending=False)
-st.subheader("📋 Model Performance Comparison")
-st.dataframe(results_df)
-
-# ROC Curve Plot
-from sklearn.metrics import roc_curve, auc
-from sklearn.preprocessing import label_binarize
-from sklearn.multiclass import OneVsRestClassifier
-
 plt.figure(figsize=(10, 7))
+y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
+n_classes = y_test_bin.shape[1]
 
 for name, clf in models.items():
-    clf = OneVsRestClassifier(clf)
-    clf.fit(X_train_scaled, label_binarize(y_train, classes=[0, 1, 2, 3]))
-    y_score = clf.predict_proba(X_test_scaled)
+    wrapped = OneVsRestClassifier(clf)
+    wrapped.fit(X_train_scaled, y_test_bin)
+    y_score = wrapped.predict_proba(X_test_scaled)
 
-    # Binarize test labels
-    y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
-    n_classes = y_test_bin.shape[1]
-
-    fpr, tpr, roc_auc = dict(), dict(), dict()
+    fpr, tpr, roc_auc = {}, {}, {}
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_test_bin[:, i], y_score[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
@@ -291,8 +274,17 @@ for name, clf in models.items():
     avg_auc = np.mean(list(roc_auc.values()))
     mean_fpr = np.linspace(0, 1, 100)
     mean_tpr = np.mean([np.interp(mean_fpr, fpr[i], tpr[i]) for i in range(n_classes)], axis=0)
-
     plt.plot(mean_fpr, mean_tpr, label=f'{name} (Avg AUC = {avg_auc:.2f})')
+
+    y_pred = np.argmax(y_score, axis=1)
+    results.append({
+        'Model': name,
+        'Accuracy': accuracy_score(y_test, y_pred),
+        'F1-Score': f1_score(y_test, y_pred, average='weighted'),
+        'Precision': precision_score(y_test, y_pred, average='weighted'),
+        'Recall': recall_score(y_test, y_pred, average='weighted'),
+        'ROC AUC': avg_auc
+    })
 
 plt.plot([0, 1], [0, 1], 'k--')
 plt.title('ROC Curve Comparison (Multi-Class)')
@@ -300,17 +292,17 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.legend(loc='lower right')
 plt.grid(True)
-plt.tight_layout()
 st.pyplot(plt.gcf())
 
-
+# --- Results Table ---
+results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
+st.subheader("📋 Model Performance Table")
+st.dataframe(results_df)
 
 # --- GPT Summary ---
-st.markdown("---")
 st.subheader("\U0001F4AC GPT Summary of Insights")
 api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
 if api_key:
-    import openai
     openai.api_key = api_key
     best_model_name = results_df.iloc[0]['Model']
     best_f1 = results_df.iloc[0]['F1-Score']
@@ -321,7 +313,6 @@ if api_key:
     {results_df.to_markdown(index=False)}
     Provide 2-3 executive summary insights in simple business language.
     """
-
     with st.spinner("Generating GPT insights..."):
         try:
             response = openai.chat.completions.create(
