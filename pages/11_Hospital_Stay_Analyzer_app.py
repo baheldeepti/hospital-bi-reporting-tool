@@ -150,14 +150,14 @@ model.fit(X_train_scaled, y_train)
 
 # --- Evaluation ---
 y_pred = model.predict(X_test_scaled)
-st.subheader("📋 Classification Report")
-st.text(classification_report(y_test, y_pred, target_names=stay_mapping.keys()))
+# st.subheader("📋 Classification Report")
+# st.text(classification_report(y_test, y_pred, target_names=stay_mapping.keys()))
 
 cm = confusion_matrix(y_test, y_pred)
-fig_cm, ax_cm = plt.subplots(figsize=(6, 6))
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(stay_mapping.keys()))
-disp.plot(ax=ax_cm, cmap='Blues', values_format='d')
-st.pyplot(fig_cm)
+# fig_cm, ax_cm = plt.subplots(figsize=(6, 6))
+# disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(stay_mapping.keys()))
+# disp.plot(ax=ax_cm, cmap='Blues', values_format='d')
+# st.pyplot(fig_cm)
 
 # --- SHAP Feature Importance ---
 st.subheader("🧠 SHAP Feature Importances")
