@@ -239,23 +239,17 @@ if api_key:
 else:
     st.warning("🔐 OpenAI API Key not found. Please add it in Streamlit secrets to enable GPT insights.")
 
-# --- Model Comparison ---
-st.subheader("\U0001F916 Model Comparison")
-st.markdown("### \U0001F5A5️ Evaluating Multiple Models")
 
-# Features and Labels
+# --- Model Comparison (Corrected) ---
 df['Stay_Class'] = df['Stay_Category_Custom'].map({'Short': 0, 'Medium': 1, 'Long': 2, 'Very Long': 3})
 features = ['Medical Condition', 'Billing Amount', 'ICD_Chapter', 'Is_Chronic', 'Billing_Anomaly']
 X = df[features]
 y = df['Stay_Class']
-
-# Split and Scale
 X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.2, random_state=42)
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Model Dictionary
 models = {
     "XGBoost": XGBClassifier(objective='multi:softprob', num_class=4, eval_metric='mlogloss', use_label_encoder=False, random_state=42),
     "Random Forest": RandomForestClassifier(random_state=42),
@@ -264,16 +258,15 @@ models = {
     "AdaBoost": AdaBoostClassifier(random_state=42)
 }
 
-# Store Results
 results = []
 plt.figure(figsize=(10, 7))
 y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
 n_classes = y_test_bin.shape[1]
 
 for name, clf in models.items():
-    wrapped = OneVsRestClassifier(clf)
-    wrapped.fit(X_train_scaled, y_test_bin)
-    y_score = wrapped.predict_proba(X_test_scaled)
+    ovr = OneVsRestClassifier(clf)
+    ovr.fit(X_train_scaled, y_test_bin)
+    y_score = ovr.predict_proba(X_test_scaled)
 
     fpr, tpr, roc_auc = {}, {}, {}
     for i in range(n_classes):
@@ -283,6 +276,7 @@ for name, clf in models.items():
     avg_auc = np.mean(list(roc_auc.values()))
     mean_fpr = np.linspace(0, 1, 100)
     mean_tpr = np.mean([np.interp(mean_fpr, fpr[i], tpr[i]) for i in range(n_classes)], axis=0)
+
     plt.plot(mean_fpr, mean_tpr, label=f'{name} (Avg AUC = {avg_auc:.2f})')
 
     y_pred = np.argmax(y_score, axis=1)
@@ -303,7 +297,6 @@ plt.legend(loc='lower right')
 plt.grid(True)
 st.pyplot(plt.gcf())
 
-# --- Results Table ---
 results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
 st.subheader("📋 Model Performance Table")
 st.dataframe(results_df)
