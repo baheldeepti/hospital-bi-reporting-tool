@@ -72,14 +72,12 @@ if gender_filter != "All":
 # 🌪 Surge Scenario Simulation
 # ----------------------
 st.subheader("⚙️ Optimization Simulation Controls")
-total_beds = st.slider("Total Beds Available", 50, 300, 150)
-staffing_capacity = st.slider("Available Staff Count", 10, 100, 50, step=5)
-icu_beds = st.slider("ICU Beds Reserved", 0, 100, 10, step=5)
-weekend_discharges = st.slider("Weekend Discharge Boost (%)", 0, 50, 10, step=5)
+total_beds = st.slider("Total Beds Available", 50, 500, 150)
+staffing_capacity = st.slider("Available Staff Count", 10, 100, 50, step=1)
+icu_beds = st.slider("ICU Beds Reserved", 0, 100, 10, step=1)
+weekend_discharges = st.slider("Weekend Discharge Boost (%)", 0, 50, 10, step=1)
 
-emergency_weight = st.slider("Emergency Weight", 1, 20, 10)
-elective_weight = st.slider("Elective Weight", 1, 20, 5)
-routine_weight = st.slider("Routine Weight", 1, 20, 3)
+
 
 surge_scenario = st.toggle("Activate Surge Scenario (e.g., flu season, pandemic surge)")
 
