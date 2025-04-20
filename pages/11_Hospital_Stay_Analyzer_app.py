@@ -160,12 +160,18 @@ cm = confusion_matrix(y_test, y_pred)
 # st.pyplot(fig_cm)
 
 # --- SHAP Feature Importance ---
-st.subheader("🧠 SHAP Feature Importances")
-explainer = shap.Explainer(model)
-shap_values = explainer(X_train_scaled)
-shap.summary_plot(shap_values, X_train, plot_type="bar", show=False)
-fig_shap = plt.gcf()
-st.pyplot(fig_shap)
+st.subheader("🧠 Feature Importances")
+# --- Step 12: XGBoost Feature Importance (Visualized) ---
+importances = model.feature_importances_
+feat_imp = pd.Series(importances, index=X.columns).sort_values()
+
+plt.figure(figsize=(10, 6))
+feat_imp.plot(kind='barh')
+plt.title("XGBoost Feature Importances")
+plt.xlabel("Importance Score")
+plt.tight_layout()
+plt.show()
+
 
 # --- GPT Summary Insights ---
 api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
