@@ -28,8 +28,7 @@ data_option = st.sidebar.radio("Select Data Option", ["Use Sample Dataset", "Upl
 if data_option == "Upload CSV File":
     uploaded_file = st.sidebar.file_uploader("Upload Patient CSV File", type=["csv"])
     if uploaded_file is not None:
-        df = pd.read_csv("https://raw.githubusercontent.com/baheldeepti/hospital-streamlit-app/main/modified_healthcare_dataset.csv")
-
+        df = pd.read_csv(uploaded_file)
         st.success("Custom dataset loaded successfully!")
     else:
         st.warning("Please upload a CSV file to proceed.")
@@ -109,7 +108,7 @@ if surge_scenario:
 # ----------------------
 def optimize_with_pulp(df, scenario, beds, staff_cap, icu_beds):
     start = time.time()
-        model = LpProblem("PULP_Optimizer", LpMinimize)
+            model = LpProblem("PULP_Optimizer", LpMinimize)
     x = LpVariable.dicts("Admit", df.index, cat=LpBinary)
     if scenario == "Prioritize Emergency":
         model += -lpSum([x[i] * (1 if df.loc[i, "Admission Type"] == "Emergency" else 0) for i in df.index])
@@ -126,7 +125,7 @@ def optimize_with_pulp(df, scenario, beds, staff_cap, icu_beds):
 
 def optimize_with_ortools(df, scenario, beds, staff_cap, icu_beds):
     start = time.time()
-        solver = pywraplp.Solver.CreateSolver('SCIP')
+            solver = pywraplp.Solver.CreateSolver('SCIP')
     x = [solver.BoolVar(f'x_{i}') for i in df.index]
     if scenario == "Prioritize Emergency":
         solver.Maximize(solver.Sum([x[i] * (1 if df.loc[i, "Admission Type"] == "Emergency" else 0) for i in df.index]))
@@ -143,7 +142,7 @@ def optimize_with_ortools(df, scenario, beds, staff_cap, icu_beds):
 
 def optimize_with_mip(df, scenario, beds, staff_cap, icu_beds):
     start = time.time()
-    model = Model()
+        model = Model()
     x = [model.add_var(var_type=BINARY) for _ in df.index]
     if scenario == "Prioritize Emergency":
         model.objective = model.maximize(xsum(x[i] * (1 if df.loc[i, "Admission Type"] == "Emergency" else 0) for i in df.index))
@@ -213,7 +212,7 @@ else:
     st.subheader("💵 Estimated Resource Utilization (Cost Proxy)")
     admitted_df['Cost_Estimate'] = admitted_df['Length_of_Stay'] * admitted_df['Priority'] * 100
     cost_fig = px.box(admitted_df, x='Admission Type', y='Cost_Estimate', title='Estimated Cost Distribution by Admission Type')
-        st.plotly_chart(cost_fig)
+            st.plotly_chart(cost_fig)
 
     # 🤖 AI-Generated Insights
     st.subheader("🤖 AI-Generated Strategic Suggestions")
