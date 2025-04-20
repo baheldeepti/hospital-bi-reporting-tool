@@ -240,6 +240,10 @@ else:
     st.warning("🔐 OpenAI API Key not found. Please add it in Streamlit secrets to enable GPT insights.")
 
 
+
+# --- Model Comparison ---
+st.subheader("\U0001F52C Model Performance & ROC Comparison")
+
 # --- Model Comparison (Corrected) ---
 df['Stay_Class'] = df['Stay_Category_Custom'].map({'Short': 0, 'Medium': 1, 'Long': 2, 'Very Long': 3})
 features = ['Medical Condition', 'Billing Amount', 'ICD_Chapter', 'Is_Chronic', 'Billing_Anomaly']
@@ -249,6 +253,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
+
+y_train_bin = label_binarize(y_train, classes=[0, 1, 2, 3])
+y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
+n_classes = y_test_bin.shape[1]
 
 models = {
     "XGBoost": XGBClassifier(objective='multi:softprob', num_class=4, eval_metric='mlogloss', use_label_encoder=False, random_state=42),
@@ -260,12 +268,10 @@ models = {
 
 results = []
 plt.figure(figsize=(10, 7))
-y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
-n_classes = y_test_bin.shape[1]
 
 for name, clf in models.items():
     ovr = OneVsRestClassifier(clf)
-    ovr.fit(X_train_scaled, y_test_bin)
+    ovr.fit(X_train_scaled, y_train_bin)
     y_score = ovr.predict_proba(X_test_scaled)
 
     fpr, tpr, roc_auc = {}, {}, {}
