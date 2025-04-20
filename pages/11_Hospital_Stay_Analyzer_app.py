@@ -186,6 +186,9 @@ report = classification_report(y_test, y_pred, target_names=['Short', 'Medium', 
 report_dict = classification_report(y_test, y_pred, target_names=['Short', 'Medium', 'Long', 'Very Long'], output_dict=True)
 report_df = pd.DataFrame(report_dict).transpose().round(2)
 
+# --- Feature Importance ---
+st.subheader("🔍 Feature Importance with SHAP & XGBoost")
+
 st.subheader("📊 Classification Report Table")
 st.dataframe(report_df.style.background_gradient(cmap='Oranges'))
 
@@ -306,6 +309,7 @@ st.pyplot(plt.gcf())
 results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
 st.subheader("📋 Model Performance Table")
 st.dataframe(results_df)
+st.dataframe(report_df.style.background_gradient(cmap='Greens'))
 
 # --- GPT Summary ---
 st.subheader("\U0001F4AC GPT Summary of Insights")
