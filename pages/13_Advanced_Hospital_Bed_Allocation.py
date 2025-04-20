@@ -9,6 +9,7 @@ from pulp import LpProblem, LpVariable, lpSum, LpMinimize, LpBinary
 from ortools.linear_solver import pywraplp
 from mip import Model, xsum, BINARY
 import plotly.express as px
+import openai
 
 st.set_page_config(page_title="Hospital Bed Allocation Optimizer", layout="wide")
 st.title("🏥 Hospital Bed Allocation Optimizer")
@@ -46,6 +47,7 @@ df.dropna(subset=['Date of Admission', 'Discharge Date'], inplace=True)
 df['Length_of_Stay'] = (df['Discharge Date'] - df['Date of Admission']).dt.days
 df = df[df['Length_of_Stay'] > 0]
 df['Priority'] = df['Admission Type'].map({'Emergency': 3, 'Elective': 2, 'Routine': 1})
+df['ICU Required'] = df['Admission Type'].apply(lambda x: 1 if x == 'Emergency' else 0)
 df = df.dropna(subset=['Priority'])
 df.reset_index(drop=True, inplace=True)
 
@@ -71,7 +73,7 @@ if gender_filter != "All":
     filtered_df = filtered_df[filtered_df['Gender'] == gender_filter]
 
 # ----------------------
-# 🌪 Optimization Simulation Controls
+# ⚙️ Optimization Simulation Controls
 # ----------------------
 st.subheader("⚙️ Optimization Simulation Controls")
 total_beds = st.slider("Total Beds Available", 50, 500, 150)
@@ -81,34 +83,26 @@ weekend_discharges = st.slider("Weekend Discharge Boost (%)", 0, 50, 10, step=1)
 weekend_fraction = st.slider("% of Patients Discharged Early", 0.0, 1.0, 0.25, step=0.05)
 
 surge_scenario = st.toggle("Activate Surge Scenario (e.g., flu season, pandemic surge)")
-
 if surge_scenario:
     st.warning("🚨 Surge scenario is active. Emergency cases and average LOS will increase.")
     filtered_df = filtered_df.copy()
     filtered_df.loc[filtered_df['Admission Type'] == 'Emergency', 'Length_of_Stay'] *= 1.2
     filtered_df = pd.concat([filtered_df, filtered_df.sample(frac=0.2, replace=True)], ignore_index=True)
 
-# 💡 Apply Weekend Discharge Impact
 if weekend_discharges > 0:
     st.info("📅 Weekend Discharge Boost active. Shortening LOS for a portion of patients.")
     weekend_boost_factor = 1 - (weekend_discharges / 100)
     idx_sample = filtered_df.sample(frac=weekend_fraction, random_state=42).index
-    filtered_df.loc[idx_sample, 'Length_of_Stay'] = filtered_df.loc[idx_sample, 'Length_of_Stay'] * weekend_boost_factor
+    filtered_df.loc[idx_sample, 'Length_of_Stay'] *= weekend_boost_factor
 
 scenario = st.radio("Scenario Strategy", ["Prioritize Emergency", "Minimize LOS", "Maximize Elective Intake"])
-
-if surge_scenario:
-    st.warning("🚨 Surge scenario is active. Emergency cases and average LOS will increase.")
-    filtered_df = filtered_df.copy()
-    filtered_df.loc[filtered_df['Admission Type'] == 'Emergency', 'Length_of_Stay'] *= 1.2
-    filtered_df = pd.concat([filtered_df, filtered_df.sample(frac=0.2, replace=True)], ignore_index=True)
 
 # ----------------------
 # 🤖 Optimization Functions
 # ----------------------
 def optimize_with_pulp(df, scenario, beds, staff_cap, icu_beds):
     start = time.time()
-            model = LpProblem("PULP_Optimizer", LpMinimize)
+    model = LpProblem("PULP_Optimizer", LpMinimize)
     x = LpVariable.dicts("Admit", df.index, cat=LpBinary)
     if scenario == "Prioritize Emergency":
         model += -lpSum([x[i] * (1 if df.loc[i, "Admission Type"] == "Emergency" else 0) for i in df.index])
@@ -116,8 +110,8 @@ def optimize_with_pulp(df, scenario, beds, staff_cap, icu_beds):
         model += lpSum([x[i] * df.loc[i, "Length_of_Stay"] for i in df.index])
     else:
         model += -lpSum([x[i] * (1 if df.loc[i, "Admission Type"] == "Elective" else 0) for i in df.index])
-        model += lpSum([x[i] for i in df.index]) <= beds
-    model += lpSum([x[i] * (1 if df.loc[i, 'ICU Required'] else 0) for i in df.index]) <= icu_beds
+    model += lpSum([x[i] for i in df.index]) <= beds
+    model += lpSum([x[i] * df.loc[i, 'ICU Required'] for i in df.index]) <= icu_beds
     model += lpSum([x[i] * df.loc[i, 'Priority'] for i in df.index]) <= staff_cap * 3
     model.solve()
     result = [i for i in df.index if x[i].varValue == 1]
@@ -125,7 +119,7 @@ def optimize_with_pulp(df, scenario, beds, staff_cap, icu_beds):
 
 def optimize_with_ortools(df, scenario, beds, staff_cap, icu_beds):
     start = time.time()
-            solver = pywraplp.Solver.CreateSolver('SCIP')
+    solver = pywraplp.Solver.CreateSolver('SCIP')
     x = [solver.BoolVar(f'x_{i}') for i in df.index]
     if scenario == "Prioritize Emergency":
         solver.Maximize(solver.Sum([x[i] * (1 if df.loc[i, "Admission Type"] == "Emergency" else 0) for i in df.index]))
@@ -133,8 +127,8 @@ def optimize_with_ortools(df, scenario, beds, staff_cap, icu_beds):
         solver.Minimize(solver.Sum([x[i] * df.loc[i, "Length_of_Stay"] for i in df.index]))
     else:
         solver.Maximize(solver.Sum([x[i] * (1 if df.loc[i, "Admission Type"] == "Elective" else 0) for i in df.index]))
-        solver.Add(solver.Sum([x[i] for i in df.index]) <= beds)
-    solver.Add(solver.Sum([x[i] * (1 if df.loc[i, 'ICU Required'] else 0) for i in df.index]) <= icu_beds)
+    solver.Add(solver.Sum([x[i] for i in df.index]) <= beds)
+    solver.Add(solver.Sum([x[i] * df.loc[i, 'ICU Required'] for i in df.index]) <= icu_beds)
     solver.Add(solver.Sum([x[i] * df.loc[i, 'Priority'] for i in df.index]) <= staff_cap * 3)
     solver.Solve()
     result = [i for i in df.index if x[i].solution_value() == 1]
@@ -142,7 +136,7 @@ def optimize_with_ortools(df, scenario, beds, staff_cap, icu_beds):
 
 def optimize_with_mip(df, scenario, beds, staff_cap, icu_beds):
     start = time.time()
-        model = Model()
+    model = Model()
     x = [model.add_var(var_type=BINARY) for _ in df.index]
     if scenario == "Prioritize Emergency":
         model.objective = model.maximize(xsum(x[i] * (1 if df.loc[i, "Admission Type"] == "Emergency" else 0) for i in df.index))
@@ -150,15 +144,15 @@ def optimize_with_mip(df, scenario, beds, staff_cap, icu_beds):
         model.objective = xsum(x[i] * df.loc[i, "Length_of_Stay"] for i in df.index)
     else:
         model.objective = model.maximize(xsum(x[i] * (1 if df.loc[i, "Admission Type"] == "Elective" else 0) for i in df.index))
-        model += xsum(x[i] for i in df.index) <= beds
-    model += xsum(x[i] * (1 if df.loc[i, 'ICU Required'] else 0) for i in df.index) <= icu_beds
+    model += xsum(x[i] for i in df.index) <= beds
+    model += xsum(x[i] * df.loc[i, 'ICU Required'] for i in df.index) <= icu_beds
     model += xsum(x[i] * df.loc[i, 'Priority'] for i in df.index) <= staff_cap * 3
     model.optimize()
     result = [i for i in df.index if x[i].x >= 0.99]
     return result, time.time() - start
 
 # ----------------------
-# 🧮 Model Comparison
+# 🧮 Model Comparison & AI Suggestions
 # ----------------------
 relax_constraints = st.toggle("🪄 Relax Constraints (ignore ICU/staff limits)")
 if relax_constraints:
@@ -179,9 +173,6 @@ admitted_df = filtered_df.loc[admitted].copy()
 avg_los = admitted_df['Length_of_Stay'].mean() if not admitted_df.empty else 0
 avg_priority = admitted_df['Priority'].mean() if not admitted_df.empty else 0
 
-# ----------------------
-# 🧠 AI Insights and Constraint Toggles
-# ----------------------
 st.header("📋 Strategy Recommendation Engine")
 st.markdown(f"""
 - **Scenario Applied**: `{scenario}`  
@@ -200,25 +191,19 @@ else:
     kpi2.metric("Avg LOS", f"{avg_los:.1f} days")
     kpi3.metric("Avg Priority", f"{avg_priority:.2f}")
 
-        # 📍 Visual: ICU vs Non-ICU
     st.subheader("🛏️ ICU vs Non-ICU Patients")
-    if 'ICU Required' in admitted_df.columns:
-        st.bar_chart(admitted_df['ICU Required'].value_counts().rename({0: 'Non-ICU', 1: 'ICU'}))
+    st.bar_chart(admitted_df['ICU Required'].value_counts().rename({0: 'Non-ICU', 1: 'ICU'}))
 
-    # 📈 Chart Comparison View
     st.subheader("📈 Admitted Patient Profile")
     st.bar_chart(admitted_df['Admission Type'].value_counts())
 
     st.subheader("💵 Estimated Resource Utilization (Cost Proxy)")
     admitted_df['Cost_Estimate'] = admitted_df['Length_of_Stay'] * admitted_df['Priority'] * 100
     cost_fig = px.box(admitted_df, x='Admission Type', y='Cost_Estimate', title='Estimated Cost Distribution by Admission Type')
-            st.plotly_chart(cost_fig)
+    st.plotly_chart(cost_fig)
 
-    # 🤖 AI-Generated Insights
     st.subheader("🤖 AI-Generated Strategic Suggestions")
-    import openai
     openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
-
     prompt = f"""
     You are a hospital operations advisor. Analyze this hospital optimization scenario:
     - Scenario: {scenario}
@@ -227,10 +212,9 @@ else:
     - Weekend discharge boost: {weekend_discharges}% applied to {int(weekend_fraction*100)}% of patients
     - Average Length of Stay (LOS): {avg_los:.1f} days
     - Average priority of admitted patients: {avg_priority:.2f}
-    
+
     Provide three clear, strategic recommendations to hospital leadership to improve operational efficiency and patient flow.
     """
-
     try:
         with st.spinner("Asking ChatGPT for strategic suggestions..."):
             response = openai.chat.completions.create(
