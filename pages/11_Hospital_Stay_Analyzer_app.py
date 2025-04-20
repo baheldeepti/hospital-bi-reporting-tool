@@ -26,9 +26,13 @@ Analyze hospital stays, detect billing anomalies, and uncover drivers of prolong
 
 **Features:**
 - Upload or use default dataset
-- Custom categorization of stay duration
+- Custom classification of hospital stay length: Short, Medium, Long, Very Long
+  - **Short**: ≤ 5 days
+  - **Medium**: 6 to 15 days
+  - **Long**: 16 to 45 days
+  - **Very Long**: > 45 days
 - Anomaly detection on billing
-- Feature importance insights with XGBoost + SHAP
+- Feature importance insights with XGBoost 
 - Model evaluation with AI-generated summaries
 """)
 
