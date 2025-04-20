@@ -261,7 +261,11 @@ To evaluate how well our models predict the **Length of Stay** categories, we fo
 
 ---
 
-### 🤖 2. Model Training (One-vs-Rest)
+### 📈 3. Feature Importance via XGBoost
+- XGBoost was used to rank features based on their predictive contribution.
+- The **top 5 features** impacting hospital stay prediction were used.
+
+### 🤖 3. Model Training (One-vs-Rest)
 - Trained five models using a One-vs-Rest (OvR) strategy:
   - ✅ XGBoost  
   - ✅ Random Forest  
@@ -272,17 +276,7 @@ To evaluate how well our models predict the **Length of Stay** categories, we fo
 
 ---
 
-### 📈 3. Feature Importance via XGBoost
-- XGBoost was used to rank features based on their predictive contribution.
-- The **top 5 features** impacting hospital stay prediction were:
 
-| Rank | Feature Name            | Description                                      |
-|------|-------------------------|--------------------------------------------------|
-| 1    | `Billing_x_Condition`   | Interaction between billing and diagnosis        |
-| 2    | `Billing Amount`        | Total cost incurred by the patient               |
-| 3    | `Billing_x_Chronic`     | Billing amount for chronic conditions            |
-| 4    | `ICD_x_Emergency`       | Diagnosis interaction with emergency admission   |
-| 5    | `Medical Condition`     | Encoded form of diagnosed medical condition      |
 
 These features provide strong signals about cost, severity, and urgency of cases—key drivers of prolonged hospital stays.
 
