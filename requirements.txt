@@ -10,7 +10,8 @@ kneed
 tabulate
 shap
 pulp
-
+ortools
+mip
 # Streamlit Chat UI
 streamlit-chat>=0.0.2
 
