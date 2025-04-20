@@ -24,6 +24,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import roc_curve, auc, precision_score, recall_score
 
 # --- App Layout ---
 st.set_page_config(page_title="Hospital Stay Analyzer", layout="wide")
