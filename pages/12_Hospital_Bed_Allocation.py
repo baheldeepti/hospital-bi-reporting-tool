@@ -144,23 +144,3 @@ st.markdown("""
 # ----------------------
 # 🤖 AI-Powered Suggestions (Dynamic with OpenAI)
 # ----------------------
-if st.button("🧠 Ask ChatGPT for Suggestions"):
-    prompt = f"""
-    Based on a hospital scenario where beds used = {len(admitted)},
-    average LOS = {avg_los:.1f} days,
-    and scenario selected is '{scenario}', provide 3 strategic actions for improvement.
-    """
-    try:
-        openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
-        with st.spinner("Asking ChatGPT for strategy suggestions..."):
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a hospital strategy advisor."},
-                    {"role": "user", "content": prompt}
-                ]
-            )
-        st.success("AI Recommendations:")
-        st.markdown(response.choices[0].message.content)
-    except Exception as e:
-        st.warning("Could not fetch OpenAI suggestions. Check your API key or try again later.")
