@@ -146,15 +146,15 @@ st.pyplot(fig2)
 
 # --- Interactive Visualizations ---
 st.subheader("\U0001F4C8 Average Length of Stay by Month")
-filtered_df['Month'] = filtered_df['Date of Admission'].dt.to_period('M').astype(str)
-los_by_month = filtered_df.groupby('Month')['Length_of_Stay'].mean().reset_index()
+df['Month'] = df['Date of Admission'].dt.to_period('M').astype(str)
+los_by_month = df.groupby('Month')['Length_of_Stay'].mean().reset_index()
 fig_los = px.line(los_by_month, x='Month', y='Length_of_Stay', markers=True, title="Average Length of Stay by Month")
 fig_los.update_traces(text=los_by_month['Length_of_Stay'].round(1), textposition="top center", hovertemplate='Month: %{x}<br>Avg Stay: %{y:.1f} days')
 st.plotly_chart(fig_los, use_container_width=True)
 
 st.subheader("\U0001F4CA Stay Category Distribution Over Time")
-filtered_df['Year'] = filtered_df['Date of Admission'].dt.year
-stay_pct = filtered_df.groupby(['Year', 'Stay_Category_Custom']).size().groupby(level=0).apply(lambda x: 100 * x / x.sum()).unstack().fillna(0).reset_index()
+df['Year'] = df['Date of Admission'].dt.year
+stay_pct = df.groupby(['Year', 'Stay_Category_Custom']).size().groupby(level=0).apply(lambda x: 100 * x / x.sum()).unstack().fillna(0).reset_index()
 stay_pct_melted = stay_pct.melt(id_vars='Year', var_name='Stay Category', value_name='Percentage')
 fig_dist = px.bar(stay_pct_melted, x='Year', y='Percentage', color='Stay Category', barmode='stack', text='Percentage', title='Stay Categories % Distribution Over Time')
 fig_dist.update_traces(texttemplate='%{text:.1f}%', textposition='inside', hovertemplate='Year: %{x}<br>Category: %{legendgroup}<br>Percent: %{y:.1f}%')
