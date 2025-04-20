@@ -121,11 +121,11 @@ st.pyplot(fig)
 st.subheader("\U0001F4CA Stay Category Distribution Over Time")
 
 # Ensure 'Year' column exists
-filtered_df['Year'] = filtered_df['Date of Admission'].dt.year
+df['Year'] = df['Date of Admission'].dt.year
 
 # Compute % distribution of stay categories by Year
 stay_pct = (
-    filtered_df.groupby(['Year', 'Stay_Category_Custom'])
+    df.groupby(['Year', 'Stay_Category_Custom'])
     .size()
     .groupby(level=0)
     .apply(lambda x: 100 * x / x.sum())
