@@ -54,10 +54,7 @@ df.reset_index(drop=True, inplace=True)
 # --------------------------
 # ✅ Check Required Columns
 # --------------------------
-required_columns = ["Patient ID", "Admission Type", "Length_of_Stay", "Priority"]
-if not all(col in df.columns for col in required_columns):
-    st.error(f"Missing required columns: {set(required_columns) - set(df.columns)}")
-    st.stop()
+
 
 total_beds = st.sidebar.slider("Total Beds Available", 50, 300, 150)
 
