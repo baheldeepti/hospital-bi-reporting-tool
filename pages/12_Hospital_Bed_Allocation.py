@@ -5,6 +5,7 @@ from pulp import LpProblem, LpVariable, lpSum, LpMinimize, LpBinary, LpStatus
 import matplotlib.pyplot as plt
 import plotly.express as px
 import openai
+import datetime
 
 # --------------------
 # 📘 Title & Description
@@ -57,11 +58,20 @@ with st.sidebar.expander("🔍 Filter Data"):
     hospital_filter = st.multiselect("Hospital", options=sorted(df['Hospital'].unique()), default=list(df['Hospital'].unique()))
     gender_filter = st.radio("Gender", options=["All"] + sorted(df['Gender'].unique().tolist()))
     age_range = st.slider("Age Range", min_value=0, max_value=100, value=(0, 100))
-    date_range = st.date_input("Admission Date Range", [df['Date of Admission'].min(), df['Date of Admission'].max()])
+    default_start = df['Date of Admission'].min().date()
+    default_end = df['Date of Admission'].max().date()
+    date_range = st.date_input("Admission Date Range", [default_start, default_end])
+
+    if len(date_range) != 2:
+        st.warning("Please select a valid start and end date.")
+        st.stop()
+
+    start_date = pd.to_datetime(date_range[0])
+    end_date = pd.to_datetime(date_range[1])
 
 filtered_df = df[(df['Hospital'].isin(hospital_filter)) &
                  (df['Age'].between(age_range[0], age_range[1])) &
-                 (df['Date of Admission'].between(date_range[0], date_range[1]))]
+                 (df['Date of Admission'].between(start_date, end_date))]
 if gender_filter != "All":
     filtered_df = filtered_df[filtered_df['Gender'] == gender_filter]
 
