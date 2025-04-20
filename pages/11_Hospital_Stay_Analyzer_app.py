@@ -118,18 +118,32 @@ ax.set_ylabel("Days")
 ax.set_xlabel("Month")
 st.pyplot(fig)
 
-t.subheader("\U0001F4CA Stay Category Distribution Over Time")
-filtered_df['Year'] = df['Date of Admission'].dt.year
-stay_pct = df.groupby(['Year', 'Stay_Category_Custom']).size().groupby(level=0).apply(lambda x: 100 * x / x.sum()).unstack().fillna(0)
+st.subheader("\U0001F4CA Stay Category Distribution Over Time")
+
+# Ensure 'Year' column exists
+filtered_df['Year'] = filtered_df['Date of Admission'].dt.year
+
+# Compute % distribution of stay categories by Year
+stay_pct = (
+    filtered_df.groupby(['Year', 'Stay_Category_Custom'])
+    .size()
+    .groupby(level=0)
+    .apply(lambda x: 100 * x / x.sum())
+    .unstack()
+    .fillna(0)
+)
+
+# Plot stacked bar chart
 fig2, ax2 = plt.subplots(figsize=(12, 6))
 stay_pct.plot(kind='bar', stacked=True, ax=ax2)
 ax2.set_title("Stay Categories % Distribution Over Time")
 ax2.set_ylabel("% Share")
 ax2.set_xlabel("Year")
 ax2.set_xticks(range(len(stay_pct)))
-ax2.set_xticklabels([str(m) for m in stay_pct.index], rotation=45, ha='right')
+ax2.set_xticklabels([str(year) for year in stay_pct.index], rotation=45, ha='right')
 ax2.legend(title="Stay Category", bbox_to_anchor=(1.05, 1), loc='upper left')
 st.pyplot(fig2)
+
 
 # --- Model Training ---
 stay_mapping = {'Short': 0, 'Medium': 1, 'Long': 2, 'Very Long': 3}
