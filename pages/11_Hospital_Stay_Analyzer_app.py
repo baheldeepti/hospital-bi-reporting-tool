@@ -154,27 +154,30 @@ model.fit(X_train_scaled, y_train)
 
 # --- Evaluation ---
 y_pred = model.predict(X_test_scaled)
-# st.subheader("📋 Classification Report")
-# st.text(classification_report(y_test, y_pred, target_names=stay_mapping.keys()))
+report = classification_report(y_test, y_pred, target_names=['Short', 'Medium', 'Long', 'Very Long'])
+report_dict = classification_report(y_test, y_pred, target_names=['Short', 'Medium', 'Long', 'Very Long'], output_dict=True)
+report_df = pd.DataFrame(report_dict).transpose().round(2)
 
+st.subheader("📊 Classification Report Table")
+st.dataframe(report_df.style.background_gradient(cmap='Oranges'))
+
+# Display Confusion Matrix as Table
 cm = confusion_matrix(y_test, y_pred)
-# fig_cm, ax_cm = plt.subplots(figsize=(6, 6))
-# disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=list(stay_mapping.keys()))
-# disp.plot(ax=ax_cm, cmap='Blues', values_format='d')
-# st.pyplot(fig_cm)
+cm_df = pd.DataFrame(cm, index=['Short', 'Medium', 'Long', 'Very Long'], columns=['Pred: Short', 'Pred: Medium', 'Pred: Long', 'Pred: Very Long'])
+st.subheader("\U0001F4CB Confusion Matrix Table")
+st.dataframe(cm_df.style.background_gradient(cmap='Blues').format("{:.0f}"))
 
-# --- SHAP Feature Importance ---
-st.subheader("🧠 Feature Importances")
-# --- Step 12: XGBoost Feature Importance (Visualized) ---
+
+
+# --- Add Feature Importance Plot ---
+st.subheader("\U0001F9E0 XGBoost Feature Importances")
 importances = model.feature_importances_
 feat_imp = pd.Series(importances, index=X.columns).sort_values()
-
-plt.figure(figsize=(10, 6))
-feat_imp.plot(kind='barh')
-plt.title("XGBoost Feature Importances")
-plt.xlabel("Importance Score")
-plt.tight_layout()
-plt.show()
+fig_imp, ax_imp = plt.subplots(figsize=(10, 6))
+feat_imp.plot(kind='barh', ax=ax_imp)
+ax_imp.set_title("XGBoost Feature Importances")
+ax_imp.set_xlabel("Importance Score")
+st.pyplot(fig_imp)
 
 
 # --- GPT Summary Insights ---
@@ -240,8 +243,48 @@ for name, model in models.items():
     f1 = f1_score(y_test, y_pred, average='weighted')
     results.append({"Model": name, "Accuracy": acc, "F1-Score": f1})
 
-results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
+# Display sorted model results first
+results_df = pd.DataFrame(results).sort_values(by="F1 Score", ascending=False)
+st.subheader("📋 Model Performance Comparison")
 st.dataframe(results_df)
+
+# ROC Curve Plot
+from sklearn.metrics import roc_curve, auc
+from sklearn.preprocessing import label_binarize
+from sklearn.multiclass import OneVsRestClassifier
+
+plt.figure(figsize=(10, 7))
+
+for name, clf in models.items():
+    clf = OneVsRestClassifier(clf)
+    clf.fit(X_train_scaled, label_binarize(y_train, classes=[0, 1, 2, 3]))
+    y_score = clf.predict_proba(X_test_scaled)
+
+    # Binarize test labels
+    y_test_bin = label_binarize(y_test, classes=[0, 1, 2, 3])
+    n_classes = y_test_bin.shape[1]
+
+    fpr, tpr, roc_auc = dict(), dict(), dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_test_bin[:, i], y_score[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    avg_auc = np.mean(list(roc_auc.values()))
+    mean_fpr = np.linspace(0, 1, 100)
+    mean_tpr = np.mean([np.interp(mean_fpr, fpr[i], tpr[i]) for i in range(n_classes)], axis=0)
+
+    plt.plot(mean_fpr, mean_tpr, label=f'{name} (Avg AUC = {avg_auc:.2f})')
+
+plt.plot([0, 1], [0, 1], 'k--')
+plt.title('ROC Curve Comparison (Multi-Class)')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.tight_layout()
+st.pyplot(plt.gcf())
+
+
 
 # --- GPT Summary ---
 st.markdown("---")
