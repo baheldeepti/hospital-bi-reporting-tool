@@ -119,7 +119,7 @@ ax.set_xlabel("Month")
 st.pyplot(fig)
 
 st.subheader("\U0001F4CA Stay Category Distribution Over Time")
-stay_pct = filtered_df.groupby(['Month', 'Stay_Category_Custom']).size().groupby(level=0).apply(lambda x: 100 * x / x.sum()).unstack().fillna(0)
+stay_pct = df.groupby(['Month', 'Stay_Category_Custom']).size().groupby(level=0).apply(lambda x: 100 * x / x.sum()).unstack().fillna(0)
 fig2, ax2 = plt.subplots(figsize=(12, 6))
 stay_pct.plot(kind='bar', stacked=True, ax=ax2)
 ax2.set_title("Stay Categories % Distribution Over Time")
