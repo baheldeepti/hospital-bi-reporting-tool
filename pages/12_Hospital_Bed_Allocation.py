@@ -89,7 +89,9 @@ elif c3.button("🛌 Electives"):
     scenario = "Maximize Elective Intake"
 
 total_beds = st.sidebar.slider("Total Beds Available", 50, 300, 150)
-
+staffing_capacity = st.sidebar.slider("Available Staff Count", 10, 100, 50, step=5)
+icu_beds = st.sidebar.slider("ICU Beds Reserved", 0, 100, 10, step=5)
+weekend_discharges = st.sidebar.slider("Weekend Discharge Boost (%)", 0, 50, 10, step=5)
 # ----------------------
 # 🤖 Optimization Model
 # ----------------------
