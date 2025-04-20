@@ -69,7 +69,7 @@ if gender_filter != "All":
     filtered_df = filtered_df[filtered_df['Gender'] == gender_filter]
 
 # ----------------------
-# ⚙️ Optimization Simulation Sliders
+# 🌪 Surge Scenario Simulation
 # ----------------------
 st.subheader("⚙️ Optimization Simulation Controls")
 total_beds = st.slider("Total Beds Available", 50, 300, 150)
@@ -80,6 +80,13 @@ weekend_discharges = st.slider("Weekend Discharge Boost (%)", 0, 50, 10, step=5)
 emergency_weight = st.slider("Emergency Weight", 1, 20, 10)
 elective_weight = st.slider("Elective Weight", 1, 20, 5)
 routine_weight = st.slider("Routine Weight", 1, 20, 3)
+
+surge_scenario = st.toggle("Activate Surge Scenario (e.g., flu season, pandemic surge)")
+
+if surge_scenario:
+    st.warning("🚨 Surge scenario is active. Emergency cases and average LOS will increase.")
+    filtered_df.loc[filtered_df['Admission Type'] == 'Emergency', 'Length_of_Stay'] *= 1.2
+    filtered_df = pd.concat([filtered_df, filtered_df.sample(frac=0.2, replace=True)], ignore_index=True)
 
 scenario = st.radio("Scenario Strategy", ["Prioritize Emergency", "Minimize LOS", "Maximize Elective Intake"])
 
