@@ -76,9 +76,18 @@ if gender_filter != "All":
     filtered_df = filtered_df[filtered_df['Gender'] == gender_filter]
 
 # --------------------------
-# 🔁 Scenario Selector
+# 🔁 Scenario Selector (Card-style)
 # --------------------------
-scenario = st.sidebar.selectbox("Scenario Strategy", ["Prioritize Emergency", "Minimize LOS", "Maximize Elective Intake"])
+st.sidebar.markdown("### Scenario Strategy")
+c1, c2, c3 = st.sidebar.columns(3)
+scenario = "Minimize LOS"
+if c1.button("🚨 Emergency"):
+    scenario = "Prioritize Emergency"
+elif c2.button("⏱ Min LOS"):
+    scenario = "Minimize LOS"
+elif c3.button("🛌 Electives"):
+    scenario = "Maximize Elective Intake"
+
 total_beds = st.sidebar.slider("Total Beds Available", 50, 300, 150)
 
 # ----------------------
@@ -106,6 +115,14 @@ admitted_df = filtered_df.loc[admitted].copy()
 tab1, tab2, tab3, tab4 = st.tabs(["📈 KPI Summary", "📊 Trend Analysis", "👩‍⚕️ Patient Drill-down", "💡 AI Strategy"])
 
 with tab1:
+    with st.expander("📌 Executive Summary"):
+        st.markdown(f"""
+        - **Scenario Applied**: `{scenario}`  
+        - **Beds Used**: {len(admitted)} / {total_beds}  
+        - **Avg LOS**: {admitted_df['Length_of_Stay'].mean():.2f} days  
+        - **Top Condition**: {admitted_df['Medical Condition'].value_counts().idxmax()}
+        """)
+
     kpi1, kpi2, kpi3 = st.columns(3)
     kpi1.metric("Beds Used", len(admitted), f"of {total_beds}")
     kpi2.metric("Avg LOS", f"{admitted_df['Length_of_Stay'].mean():.1f} days")
@@ -125,9 +142,17 @@ with tab2:
                  labels={"Length_of_Stay": "Average LOS"}, title="Avg LOS by Gender & Hospital")
     st.plotly_chart(fig, use_container_width=True)
 
+    st.subheader("📅 LOS Trend Over Time")
+    admitted_df['Admission Month'] = admitted_df['Date of Admission'].dt.to_period('M').astype(str)
+    monthly_los = admitted_df.groupby('Admission Month')['Length_of_Stay'].mean().reset_index()
+    fig_trend = px.line(monthly_los, x='Admission Month', y='Length_of_Stay', title="LOS Trend Over Time")
+    st.plotly_chart(fig_trend, use_container_width=True)
+
 with tab3:
     st.subheader("Admitted Patients Breakdown")
     st.dataframe(admitted_df[["Patient ID", "Admission Type", "Hospital", "Medical Condition", "Gender", "Age", "Length_of_Stay"]])
+    csv = admitted_df.to_csv(index=False)
+    st.download_button("📥 Download Admitted Data", data=csv, file_name="admitted_patients.csv", mime="text/csv")
 
 with tab4:
     st.markdown("""
@@ -136,13 +161,45 @@ with tab4:
     - Cross-train nursing staff to handle peak LOS wards.
     - Add predictive discharge readiness score to enhance early movement.
     """)
-    if st.button("Generate Additional Insights with ChatGPT"):
+
+    # Strategy Comparison
+    st.subheader("📊 Strategy Comparison Dashboard")
+    scenarios = ["Prioritize Emergency", "Minimize LOS", "Maximize Elective Intake"]
+    comparison_results = []
+
+    for strat in scenarios:
+        model = LpProblem("Compare_Strategy", LpMinimize)
+        temp_x = LpVariable.dicts("Admit", filtered_df.index, cat=LpBinary)
+        if strat == "Prioritize Emergency":
+            model += lpSum([temp_x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Emergency" else 10) for i in filtered_df.index])
+        elif strat == "Minimize LOS":
+            model += lpSum([temp_x[i] * filtered_df.loc[i, "Length_of_Stay"] for i in filtered_df.index])
+        else:
+            model += lpSum([temp_x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Elective" else 5) for i in filtered_df.index])
+
+        model += lpSum([temp_x[i] for i in filtered_df.index]) <= total_beds
+        model.solve()
+
+        admitted_idx = [i for i in filtered_df.index if temp_x[i].varValue == 1]
+        result_df = filtered_df.loc[admitted_idx].copy()
+
+        comparison_results.append({
+            "Strategy": strat,
+            "Beds Used": len(admitted_idx),
+            "Avg LOS": round(result_df["Length_of_Stay"].mean(), 2),
+            "Avg Priority": round(result_df["Priority"].mean(), 2),
+            "Emergency": sum(result_df["Admission Type"] == "Emergency"),
+            "Elective": sum(result_df["Admission Type"] == "Elective"),
+            "Routine": sum(result_df["Admission Type"] == "Routine")
+        })
+
+    st.dataframe(pd.DataFrame(comparison_results))
+
+    if st.button("🧠 Recommend Best Strategy with ChatGPT"):
         prompt = f"""
-        Based on this summary, suggest additional hospital management strategies:
-        Total Beds: {total_beds}, Avg LOS: {admitted_df['Length_of_Stay'].mean():.1f},
-        Emergency: {sum(admitted_df['Admission Type']=='Emergency')},
-        Elective: {sum(admitted_df['Admission Type']=='Elective')},
-        Routine: {sum(admitted_df['Admission Type']=='Routine')}
+        Compare these strategies for bed allocation:
+        {pd.DataFrame(comparison_results).to_string(index=False)}
+        Based on bed usage, avg LOS, and case mix, what strategy should we adopt next week?
         """
         try:
             openai.api_key = st.secrets["openai_api_key"]
@@ -151,7 +208,7 @@ with tab4:
                 messages=[{"role": "system", "content": "You are a hospital operations expert."},
                          {"role": "user", "content": prompt}]
             )
-            st.success("AI Strategy Generated:")
+            st.success("AI Strategy Recommendation:")
             st.markdown(completion.choices[0].message.content)
         except Exception as e:
             st.warning("Unable to fetch recommendations. Please check your OpenAI API Key.")
