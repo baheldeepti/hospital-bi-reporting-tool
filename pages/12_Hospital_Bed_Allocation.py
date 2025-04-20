@@ -77,17 +77,15 @@ staffing_capacity = st.slider("Available Staff Count", 10, 100, 50, step=1)
 icu_beds = st.slider("ICU Beds Reserved", 0, 100, 10, step=1)
 weekend_discharges = st.slider("Weekend Discharge Boost (%)", 0, 50, 10, step=1)
 
-
-
 surge_scenario = st.toggle("Activate Surge Scenario (e.g., flu season, pandemic surge)")
 
 if surge_scenario:
     st.warning("🚨 Surge scenario is active. Emergency cases and average LOS will increase.")
+    filtered_df = filtered_df.copy()
     filtered_df.loc[filtered_df['Admission Type'] == 'Emergency', 'Length_of_Stay'] *= 1.2
     filtered_df = pd.concat([filtered_df, filtered_df.sample(frac=0.2, replace=True)], ignore_index=True)
 
 scenario = st.radio("Scenario Strategy", ["Prioritize Emergency", "Minimize LOS", "Maximize Elective Intake"])
-
 
 # ----------------------
 # 🤖 Strategy Simulation
@@ -96,11 +94,11 @@ model = LpProblem("Bed_Allocation", LpMinimize)
 x = LpVariable.dicts("Admit", filtered_df.index, cat=LpBinary)
 
 if scenario == "Prioritize Emergency":
-    model += lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Emergency" ) for i in filtered_df.index])
+    model += -lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Emergency") for i in filtered_df.index])
 elif scenario == "Minimize LOS":
     model += lpSum([x[i] * filtered_df.loc[i, "Length_of_Stay"] for i in filtered_df.index])
-else:
-    model += lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Elective" ) for i in filtered_df.index])
+else:  # Maximize Elective
+    model += -lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Elective") for i in filtered_df.index])
 
 model += lpSum([x[i] for i in filtered_df.index]) <= total_beds
 model.solve()
@@ -112,20 +110,26 @@ admitted_df = filtered_df.loc[admitted].copy()
 # 📋 Strategy Recommendation Engine
 # ----------------------
 st.header("📋 Strategy Recommendation Engine")
+avg_los = admitted_df['Length_of_Stay'].mean() if not admitted_df.empty else 0
+avg_priority = admitted_df['Priority'].mean() if not admitted_df.empty else 0
+
 st.markdown(f"""
 - **Scenario Applied**: `{scenario}`  
 - **Beds Used**: {len(admitted)} / {total_beds}  
-- **Avg LOS**: {admitted_df['Length_of_Stay'].mean():.2f} days
+- **Avg LOS**: {avg_los:.2f} days
 """)
 
 # ----------------------
 # 📊 KPI Summary
 # ----------------------
 st.subheader("📊 KPI Summary")
-kpi1, kpi2, kpi3 = st.columns(3)
-kpi1.metric("Beds Used", len(admitted), f"of {total_beds}")
-kpi2.metric("Avg LOS", f"{admitted_df['Length_of_Stay'].mean():.1f} days")
-kpi3.metric("Avg Priority", f"{admitted_df['Priority'].mean():.2f}")
+if admitted_df.empty:
+    st.error("No patients were admitted based on the selected constraints. Try adjusting filters or sliders.")
+else:
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Beds Used", len(admitted), f"of {total_beds}")
+    kpi2.metric("Avg LOS", f"{avg_los:.1f} days")
+    kpi3.metric("Avg Priority", f"{avg_priority:.2f}")
 
 # ----------------------
 # 💡 Business Recommendations based on KPI
@@ -143,19 +147,20 @@ st.markdown("""
 if st.button("🧠 Ask ChatGPT for Suggestions"):
     prompt = f"""
     Based on a hospital scenario where beds used = {len(admitted)},
-    average LOS = {admitted_df['Length_of_Stay'].mean():.1f} days,
+    average LOS = {avg_los:.1f} days,
     and scenario selected is '{scenario}', provide 3 strategic actions for improvement.
     """
     try:
         openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "You are a hospital strategy advisor."},
-                     {"role": "user", "content": prompt}]
-        )
+        with st.spinner("Asking ChatGPT for strategy suggestions..."):
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a hospital strategy advisor."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
         st.success("AI Recommendations:")
         st.markdown(response.choices[0].message.content)
     except Exception as e:
-        st.warning("Could not fetch OpenAI suggestions. Check API key or try again later.")
-
-
+        st.warning("Could not fetch OpenAI suggestions. Check your API key or try again later.")
