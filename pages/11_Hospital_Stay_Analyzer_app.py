@@ -247,6 +247,65 @@ else:
 
 # --- Model Comparison ---
 st.subheader("\U0001F52C Model Performance & ROC Comparison")
+st.subheader("🧠 Approach & Methodology for Model Evaluation")
+
+st.markdown("""
+To evaluate how well our models predict the **Length of Stay** categories, we followed a structured approach:
+
+---
+
+### 📌 1. Data Preparation
+- Selected clinical and administrative features such as:
+  - **Medical Condition**, **Billing Amount**, **ICD Codes**, **Chronic Status**, and **Anomaly Detection**.
+- Created a target variable with four classes: **Short**, **Medium**, **Long**, and **Very Long** stays.
+
+---
+
+### 🤖 2. Model Training (One-vs-Rest)
+- Trained five models using a One-vs-Rest (OvR) strategy:
+  - ✅ XGBoost  
+  - ✅ Random Forest  
+  - ✅ Logistic Regression  
+  - ✅ Gradient Boosting  
+  - ✅ AdaBoost  
+- All models were trained on scaled features and evaluated on a 20% test split.
+
+---
+
+### 📈 3. Feature Importance via XGBoost
+- XGBoost was used to rank features based on their predictive contribution.
+- The **top 5 features** impacting hospital stay prediction were:
+
+| Rank | Feature Name            | Description                                      |
+|------|-------------------------|--------------------------------------------------|
+| 1    | `Billing_x_Condition`   | Interaction between billing and diagnosis        |
+| 2    | `Billing Amount`        | Total cost incurred by the patient               |
+| 3    | `Billing_x_Chronic`     | Billing amount for chronic conditions            |
+| 4    | `ICD_x_Emergency`       | Diagnosis interaction with emergency admission   |
+| 5    | `Medical Condition`     | Encoded form of diagnosed medical condition      |
+
+These features provide strong signals about cost, severity, and urgency of cases—key drivers of prolonged hospital stays.
+
+---
+
+### 🧪 4. ROC Curve Analysis
+- Used one-hot encoding to compute ROC curves for each class.
+- Averaged ROC curves across 4 classes to visualize trade-off between **True Positive Rate (TPR)** and **False Positive Rate (FPR)**.
+
+---
+
+### 🧾 5. Performance Metrics
+- Computed:
+  - **Accuracy**
+  - **F1 Score**
+  - **Precision**
+  - **Recall**
+- Best model was selected based on highest **F1 Score** and ROC AUC.
+
+---
+
+This robust modeling pipeline enables hospitals to better forecast resource needs and improve operational planning.
+""")
 
 # --- Model Comparison (Corrected) ---
 from sklearn.metrics import (
@@ -327,7 +386,21 @@ st.pyplot(plt.gcf())
 # Results table
 results_df = pd.DataFrame(results).sort_values(by="F1-Score", ascending=False)
 st.subheader("📋 Model Performance Table")
-st.dataframe(results_df)
+
+# Apply background gradient to key metric columns
+styled_results_df = results_df.style.background_gradient(
+    subset=["F1-Score", "Accuracy", "Precision", "Recall", "ROC AUC"],
+    cmap='YlGn'  # Yellow-Green color map (good for performance heatmaps)
+).format({
+    "F1-Score": "{:.2f}",
+    "Accuracy": "{:.2f}",
+    "Precision": "{:.2f}",
+    "Recall": "{:.2f}",
+    "ROC AUC": "{:.2f}"
+})
+
+st.dataframe(styled_results_df)
+
 
 
 # --- GPT Summary ---
