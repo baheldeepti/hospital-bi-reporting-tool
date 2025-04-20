@@ -96,11 +96,11 @@ model = LpProblem("Bed_Allocation", LpMinimize)
 x = LpVariable.dicts("Admit", filtered_df.index, cat=LpBinary)
 
 if scenario == "Prioritize Emergency":
-    model += lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Emergency" else emergency_weight) for i in filtered_df.index])
+    model += lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Emergency" ) for i in filtered_df.index])
 elif scenario == "Minimize LOS":
     model += lpSum([x[i] * filtered_df.loc[i, "Length_of_Stay"] for i in filtered_df.index])
 else:
-    model += lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Elective" else elective_weight) for i in filtered_df.index])
+    model += lpSum([x[i] * (1 if filtered_df.loc[i, "Admission Type"] == "Elective" ) for i in filtered_df.index])
 
 model += lpSum([x[i] for i in filtered_df.index]) <= total_beds
 model.solve()
@@ -147,8 +147,8 @@ if st.button("🧠 Ask ChatGPT for Suggestions"):
     and scenario selected is '{scenario}', provide 3 strategic actions for improvement.
     """
     try:
-        openai.api_key = st.secrets["openai_api_key"]
-        response = openai.ChatCompletion.create(
+        openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": "You are a hospital strategy advisor."},
                      {"role": "user", "content": prompt}]
