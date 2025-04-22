@@ -12,7 +12,7 @@ shap
 pulp
 ortools
 mip
-cffi==1.15.1
+
 
 # Streamlit Chat UI
 streamlit-chat>=0.0.2
