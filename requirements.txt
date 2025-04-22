@@ -11,7 +11,7 @@ tabulate
 shap
 pulp
 ortools
-mip
+
 
 
 # Streamlit Chat UI
