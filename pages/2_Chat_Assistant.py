@@ -1,22 +1,19 @@
+
 import streamlit as st
 import pandas as pd
 import openai
 import matplotlib.pyplot as plt
+import altair as alt
 import traceback
 import re
 
-# 🔐 Set API key securely
+# 🔐 Secure API key access
 openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
 
 # 🧠 Initialize session state
-if "main_df" not in st.session_state:
-    st.session_state["main_df"] = None
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "query_log" not in st.session_state:
-    st.session_state["query_log"] = []
-if "fallback_log" not in st.session_state:
-    st.session_state["fallback_log"] = []
+for key in ["main_df", "history", "query_log", "fallback_log"]:
+    if key not in st.session_state:
+        st.session_state[key] = [] if "log" in key or key == "history" else None
 
 # 📁 File upload UI
 def load_data_ui():
@@ -37,93 +34,65 @@ def load_data_ui():
                 except Exception as e:
                     st.error(f"Error loading file: {e}")
 
-load_data_ui()
-
-# 📊 Chart display
-import altair as alt
-
-# 📊 Improved visualization with tooltips and labels
+# 📊 Dynamic chart with tooltips + labels
 def try_visualize(result):
     try:
+        # Convert to DataFrame
         if isinstance(result, pd.Series):
             df_plot = result.reset_index()
-            df_plot.columns = ["Category", "Value"]
+        elif isinstance(result, pd.DataFrame):
+            df_plot = result.reset_index(drop=True)
+        else:
+            st.warning("Unsupported result type for visualization.")
+            return
 
-            chart = (
-                alt.Chart(df_plot)
-                .mark_bar()
-                .encode(
-                    x=alt.X("Category:N", title=None, sort="-y"),
-                    y=alt.Y("Value:Q", title="Value"),
-                    tooltip=["Category", "Value"]
-                )
-                .properties(width=600, height=400)
-            )
+        # Detect numeric and categorical columns
+        numeric_cols = df_plot.select_dtypes(include='number').columns.tolist()
+        non_numeric_cols = df_plot.select_dtypes(exclude='number').columns.tolist()
 
-            text = (
-                alt.Chart(df_plot)
-                .mark_text(align='center', dy=-5, fontSize=12)
-                .encode(x="Category:N", y="Value:Q", text="Value")
-            )
+        if not numeric_cols:
+            st.warning("No numeric column found for Y-axis.")
+            return
+        if not non_numeric_cols:
+            st.warning("No categorical column found for X-axis.")
+            return
 
-            st.altair_chart(chart + text, use_container_width=True)
+        y_col = numeric_cols[0]
+        x_col = non_numeric_cols[0]
+        color_col = non_numeric_cols[1] if len(non_numeric_cols) > 1 else None
 
-        elif isinstance(result, pd.DataFrame) and result.shape[1] >= 2:
-            df_plot = result.reset_index()
-            df_plot.columns = ["Category", "Value"]
+        # Prepare plotting data
+        selected_cols = [x_col, y_col] if not color_col else [x_col, color_col, y_col]
+        df_plot = df_plot[selected_cols].dropna()
+        df_plot.columns = ["Category"] + (["Subgroup"] if color_col else []) + ["Value"]
 
-            chart = (
-                alt.Chart(df_plot)
-                .mark_bar()
-                .encode(
-                    x=alt.X("Category:N", title=None, sort="-y"),
-                    y=alt.Y("Value:Q", title="Value"),
-                    tooltip=["Category", "Value"]
-                )
-                .properties(width=600, height=400)
-            )
+        # Build chart
+        chart = alt.Chart(df_plot).mark_bar().encode(
+            x=alt.X("Category:N", sort="-y", title="Category"),
+            y=alt.Y("Value:Q", title="Value"),
+            tooltip=["Category", "Value"] + (["Subgroup"] if color_col else [])
+        )
+        if color_col:
+            chart = chart.encode(color="Subgroup:N")
 
-            text = (
-                alt.Chart(df_plot)
-                .mark_text(align='center', dy=-5, fontSize=12)
-                .encode(x="Category:N", y="Value:Q", text="Value")
-            )
-
-            st.altair_chart(chart + text, use_container_width=True)
+        st.altair_chart(chart.properties(width=700, height=400), use_container_width=True)
 
     except Exception as e:
-        st.warning(f"Could not render interactive chart: {e}")
-
+        st.warning(f"Could not render chart: {e}")
 
 # 📝 Summary formatter
 def format_summary(summary_text: str) -> str:
-    summary = re.sub(r"\s+", " ", summary_text).strip()
-    summary = re.sub(r"(\d),\s(\d)", r"\1\2", summary)
-    hospitals = re.split(r",\s*|\band\b", summary)
-    formatted_lines = []
-    for hospital in hospitals:
-        match = re.search(r"([A-Za-z0-9() \-]+?)\s+billed\s+approximately\s+\$?([\d,]+)", hospital)
-        if match:
-            name = match.group(1).strip()
-            amount = match.group(2).replace(",", "")
-            formatted_lines.append(f"- **{name}**: ${int(amount):,}")
-    if not formatted_lines:
-        return f"📝 **Summary:** {summary}"
-    return "📝 **Summary**  \n" + "\n".join(formatted_lines)
+    return f"📝 **Summary:** {summary_text.strip()}"
 
 # 🧠 GPT-based summary
 def get_summary(question, result_str):
-    summary_prompt = f"""You are a helpful assistant.
-The user asked: {question}
-The result of the query was: {result_str}
-Summarize the insight clearly."""
+    summary_prompt = f"You are a helpful assistant.\nThe user asked: {question}\nThe result of the query was: {result_str}\nSummarize the insight clearly."
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": summary_prompt}]
         )
-        raw_summary = response.choices[0].message.content.strip()
-        return format_summary(raw_summary)
+        return format_summary(response.choices[0].message.content.strip())
     except:
         return ""
 
@@ -135,29 +104,27 @@ def handle_chat(question):
         return
 
     columns = ", ".join(df.columns)
-
     st.chat_message("user").write(question)
     st.session_state.history.append({"role": "user", "content": question})
     st.session_state.query_log.append(question)
 
-    prompt = f"""You are a senior data analyst working with this DataFrame: df
-Available columns: {columns}
-Conversation so far:
-{st.session_state.history}
+    prompt = f"You are a senior data analyst working with this DataFrame: df\nAvailable columns: {columns}\nConversation so far:\n{st.session_state.history}\n\nWrite executable pandas code to answer the **last user question only**.\n- Assign output to a variable named `result`\n- Use only valid column names from the DataFrame\n- Do not include explanations or print statements\n- Only output valid Python code"
 
-Write executable pandas code to answer the **last user question only**.
-- Assign output to a variable named `result`
-- Use only valid column names from the DataFrame
-- Do not include explanations or print statements
-- Only output valid Python code"""
-    
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
-        code = response.choices[0].message.content.strip()
+        # code = response.choices[0].message.content.strip()
+        raw_code = response.choices[0].message.content.strip()
+        raw_code = response.choices[0].message.content.strip()
+        code = re.sub(r"(?s)```(?:python)?\s*(.*?)\s*```", r"\1", raw_code)
+        code = re.sub(r"^```|```$", "", code).strip()
+        # ✅ Fully cleaned code for exec()
+
+
+
         st.code(code, language="python")
 
         local_vars = {"df": df}
@@ -192,6 +159,7 @@ def render_logs():
         st.dataframe(value_counts)
     else:
         st.info("No queries logged yet.")
+
     fallback_log = st.session_state.get("fallback_log", [])
     if fallback_log:
         st.markdown("### ⚠️ Fallback Queries (Unanswered)")
@@ -201,6 +169,7 @@ def render_logs():
 # 🧪 App UI
 st.title("🏥 Hospital Chat Assistant")
 st.markdown("Ask questions about hospital data. Get real answers with charts and code-backed insights!")
+load_data_ui()
 
 if prompt := st.chat_input("Ask a question about the hospital dataset..."):
     handle_chat(prompt)
