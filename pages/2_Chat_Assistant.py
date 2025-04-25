@@ -126,6 +126,10 @@ def handle_chat(question):
 
 
         st.code(code, language="python")
+        # Pre-processing before execution
+        for col in df.columns:
+            if "date" in col.lower() or "admission" in col.lower():
+                df[col] = pd.to_datetime(df[col], errors="coerce")
 
         local_vars = {"df": df}
         exec(code, {}, local_vars)
