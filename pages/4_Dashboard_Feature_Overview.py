@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(page_title="📊 Dashboard Feature Overview", layout="wide")
-st.title("📊 Hospital Dashboard - Feature Overview")
+
 
 # 📄 Try to load and display external Markdown file content if available
 try:
@@ -49,11 +49,6 @@ This document outlines the current capabilities of the **Hospital Dashboard** pa
 - **Cached Calculations**: Optimized for performance using `@st.cache` or `st.cache_data`.
 - **Session Safety**: Prevents crashes if dataset is not yet loaded.
 
-### 🔮 Future Expansion Ideas
-- Cross-tab summaries by multiple filters.
-- Dashboard snapshots or PDF export for offline reports.
-- Custom filter memory across sessions.
-- Forecasting widget integration (Prophet/ARIMA).
-    """)
+)
 
 
