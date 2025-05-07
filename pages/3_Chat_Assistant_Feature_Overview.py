@@ -36,5 +36,12 @@ A **Streamlit-powered AI chatbot** for exploring and analyzing hospital datasets
 
 ---
 
+## 🚀 Getting Started
+
+### 🔧 Prerequisites
+
+- Python 3.8+
+- An OpenAI API Key
+- Streamlit
 
 
