@@ -1,3 +1,8 @@
+import streamlit as st
+
+st.set_page_config(page_title="🏥 Anomaly Detection Overview", layout="wide")
+
+st.markdown("""
 # 🏥 Streamlit App with Chat-Based Analytics for Anomaly Detection
 
 An interactive analytics dashboard to explore, detect, and explain **anomalies in hospital data** — powered by machine learning, explainable AI (SHAP), and natural language summaries using OpenAI GPT.
@@ -30,7 +35,7 @@ An interactive analytics dashboard to explore, detect, and explain **anomalies i
 - Visualize ROC curves for all models
 
 ### 💬 AI-Powered Narrative Insights
-- Summarizes key findings using **GPT-3.5**:
+- Summarizes key findings using **GPT-3.5 or GPT-4**:
   - Executive-ready insights on anomalies and top features
   - Comparison of models using easy-to-understand language
 - Requires OpenAI API key (via Streamlit secrets or session state)
@@ -51,8 +56,6 @@ An interactive analytics dashboard to explore, detect, and explain **anomalies i
 
 Ensure the dataset includes:
 
-- `Date of Admission`, `Discharge Date`, `Billing Amount`, `Medical Condition`,  
+- `Date of Admission`, `Discharge Date`, `Billing Amount`, `Medical Condition`  
 - `Insurance Provider`, `Gender`, `Medication`, `Age`
-
----
-
+""", unsafe_allow_html=True)
