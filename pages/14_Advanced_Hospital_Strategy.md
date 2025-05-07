@@ -1,3 +1,8 @@
+import streamlit as st
+
+st.set_page_config(page_title="🏥 Strategy Optimization Overview", layout="wide")
+
+st.markdown("""
 # 🏥 Hospital Strategy Optimization Dashboard
 
 Welcome! This dashboard helps hospitals save money and improve patient care using data, math, and a bit of AI. You don't need to be a data scientist to understand this guide — it's written for anyone, even a 15-year-old!
@@ -45,6 +50,7 @@ This app takes hospital patient data (like costs, stay duration, and weekend adm
 
 ## 🧾 Requirements
 This runs on **Streamlit Cloud** and uses the following Python packages:
+
 ```txt
 streamlit
 pandas
@@ -54,24 +60,3 @@ seaborn
 scikit-learn
 pulp
 openai
-```
-Add these to your `requirements.txt` file if deploying.
-
----
-
-## 🤔 Why This Matters
-Hospitals deal with a lot of cost pressure. This tool makes it easy to:
-- Detect expensive patterns
-- Make cost-saving decisions backed by data
-- Do it all **without needing to write complex code**
-
----
-
-## 👨‍⚕️ Created For
-- Hospital managers
-- Data enthusiasts
-- Students learning healthcare analytics
-- Anyone curious about how AI and optimization help real-world decisions
-
-Have fun exploring hospital strategy with data! 🎉
-
