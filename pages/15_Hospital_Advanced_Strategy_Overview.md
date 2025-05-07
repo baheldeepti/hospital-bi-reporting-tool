@@ -1,3 +1,8 @@
+import streamlit as st
+
+st.set_page_config(page_title="🏥 Strategy Optimization Overview", layout="wide")
+
+st.markdown("""
 # 🏥 Hospital Strategy Optimization Dashboard
 
 An interactive **Streamlit** app that simulates and recommends hospital patient management strategies using **Linear/Integer Programming**, **Anomaly Detection**, and **AI-powered decision support**.
@@ -44,11 +49,11 @@ Ensure your uploaded `.csv` file includes:
 
 ## ⚙️ Optimization Strategies
 
-| Strategy | Approach | Optimized For |
-|----------|----------|---------------|
-| **IP**   | Integer programming | Exact patient selection under constraints |
-| **LP**   | Relaxed linear solution | Fast estimation |
-| **Greedy** | Sort by lowest cost | Baseline quick comparison |
+| Strategy    | Approach             | Optimized For                        |
+|-------------|----------------------|--------------------------------------|
+| **IP**      | Integer Programming  | Exact patient selection under constraints |
+| **LP**      | Linear Programming   | Fast estimation with relaxed constraints |
+| **Greedy**  | Cost-based sorting   | Quick and simple baseline comparison |
 
 ---
-
+""", unsafe_allow_html=True)
