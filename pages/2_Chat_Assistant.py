@@ -1,6 +1,6 @@
-
 import streamlit as st
 import pandas as pd
+import numpy as np
 import openai
 import matplotlib.pyplot as plt
 import altair as alt
@@ -11,13 +11,13 @@ import re
 openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
 
 # 🧠 Initialize session state
-for key in ["main_df", "history", "query_log", "fallback_log"]:
+for key in ["main_df",history", "query_log", "fallback_log"]:
     if key not in st.session_state:
         st.session_state[key] = [] if "log" in key or key == "history" else None
 
 # 📁 File upload UI
 def load_data_ui():
-    with st.sidebar.expander("📁 Load or Upload Dataset", expanded=True):
+    wit st.sidebar.expander("📁 Load or Upload Dataset", expanded=True):
         st.markdown("Upload your CSV or use our sample dataset.")
         if st.button("📥 Load Sample Data"):
             df = pd.read_csv("https://raw.githubusercontent.com/baheldeepti/hospital-streamlit-app/main/modified_healthcare_dataset.csv")
@@ -27,17 +27,16 @@ def load_data_ui():
         if uploaded_file:
             with st.spinner("Loading your file..."):
                 try:
-                    df = pd.read_csv(uploaded_file)
+                    df = pd.read_csv(uploaded_fi)
                     st.session_state["main_df"] = df
                     st.success("✅ Uploaded data loaded successfully.")
                     st.dataframe(df.head(10))
                 except Exception as e:
                     st.error(f"Error loading file: {e}")
 
-# 📊 Dynamic chart with tooltips + labels
+# 📊 Dynamic chart with tooltip + labels
 def try_visualize(result):
     try:
-        # Convert to DataFrame
         if isinstance(result, pd.Series):
             df_plot = result.reset_index()
         elif isinstance(result, pd.DataFrame):
@@ -46,7 +45,6 @@ def try_visualize(result):
             st.warning("Unsupported result type for visualization.")
             return
 
-        # Detect numeric and categorical columns
         numeric_cols = df_plot.select_dtypes(include='number').columns.tolist()
         non_numeric_cols = df_plot.select_dtypes(exclude='number').columns.tolist()
 
@@ -61,12 +59,10 @@ def try_visualize(result):
         x_col = non_numeric_cols[0]
         color_col = non_numeric_cols[1] if len(non_numeric_cols) > 1 else None
 
-        # Prepare plotting data
         selected_cols = [x_col, y_col] if not color_col else [x_col, color_col, y_col]
         df_plot = df_plot[selected_cols].dropna()
         df_plot.columns = ["Category"] + (["Subgroup"] if color_col else []) + ["Value"]
 
-        # Build chart
         chart = alt.Chart(df_plot).mark_bar().encode(
             x=alt.X("Category:N", sort="-y", title="Category"),
             y=alt.Y("Value:Q", title="Value"),
@@ -81,22 +77,22 @@ def try_visualize(result):
         st.warning(f"Could not render chart: {e}")
 
 # 📝 Summary formatter
-def format_summary(summary_text: str) -> str:
+def format_summar(summary_text: str) -> str:
     return f"📝 **Summary:** {summary_text.strip()}"
 
-# 🧠 GPT-based summary
+ 🧠 GPT-based summary
 def get_summary(question, result_str):
     summary_prompt = f"You are a helpful assistant.\nThe user asked: {question}\nThe result of the query was: {result_str}\nSummarize the insight clearly."
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "user", "content": summary_prompt}]
+            messages=[{"role": "user" "content": summary_prompt}]
         )
         return format_summary(response.choices[0].message.content.strip())
     except:
         return ""
 
-# 🧠 Main chat handler
+# 🧠 Main chat handle
 def handle_chat(question):
     df = st.session_state["main_df"]
     if df is None:
@@ -116,22 +112,20 @@ def handle_chat(question):
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
-        # code = response.choices[0].message.content.strip()
-        raw_code = response.choices[0].message.content.strip()
         raw_code = response.choices[0].message.content.strip()
         code = re.sub(r"(?s)```(?:python)?\s*(.*?)\s*```", r"\1", raw_code)
         code = re.sub(r"^```|```$", "", code).strip()
-        # ✅ Fully cleaned code for exec()
-
-
 
         st.code(code, language="python")
-        # Pre-processing before execution
+
+        # Convert date columns
         for col in df.columns:
             if "date" in col.lower() or "admission" in col.lower():
                 df[col] = pd.to_datetime(df[col], errors="coerce")
 
-        local_vars = {"df": df}
+        # Add required libraries to exec context
+        local_vars = {"df": df, "pd": pd, "np": np}
+
         exec(code, {}, local_vars)
         result = local_vars.get("result", "No result")
 
@@ -156,7 +150,7 @@ def render_logs():
     st.subheader("🪵 Conversation Logs")
     query_log = st.session_state.get("query_log", [])
     if query_log:
-        st.markdown("### 🔁 Most Asked Questions")
+        .markdown("### 🔁 Mos Asked Questions")
         log_df = pd.DataFrame(query_log, columns=["Query"])
         value_counts = log_df["Query"].value_counts().reset_index()
         value_counts.columns = ["Query", "Count"]
@@ -173,9 +167,7 @@ def render_logs():
 # 🧪 App UI
 st.title("🏥 Hospital Chat Assistant")
 st.markdown("Ask questions about hospital data. Get real answers with charts and code-backed insights!")
-load_data_ui()
-
-if prompt := st.chat_input("Ask a question about the hospital dataset..."):
+load_data_ui()if prompt := st.chat_input("Ask a question about the hospital dataset..."):
     handle_chat(prompt)
 
 # 🪵 Logs display
