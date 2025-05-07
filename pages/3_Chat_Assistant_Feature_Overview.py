@@ -1,3 +1,6 @@
+import streamlit as st
+
+
 # 🏥 Hospital Chat Assistant
 
 A **Streamlit-powered AI chatbot** for exploring and analyzing hospital datasets using natural language. Users can upload a dataset or use the built-in sample, ask questions about the data, and receive chart-backed, code-generated answers—powered by GPT-4 and pandas.
