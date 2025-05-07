@@ -11,13 +11,13 @@ import re
 openai.api_key = st.secrets.get("OPENAI_API_KEY") or st.session_state.get("OPENAI_API_KEY")
 
 # 🧠 Initialize session state
-for key in ["main_df",history", "query_log", "fallback_log"]:
+for key in ["main_df", "history", "query_log", "fallback_log"]:
     if key not in st.session_state:
         st.session_state[key] = [] if "log" in key or key == "history" else None
 
 # 📁 File upload UI
 def load_data_ui():
-    wit st.sidebar.expander("📁 Load or Upload Dataset", expanded=True):
+    with st.sidebar.expander("📁 Load or Upload Dataset", expanded=True):
         st.markdown("Upload your CSV or use our sample dataset.")
         if st.button("📥 Load Sample Data"):
             df = pd.read_csv("https://raw.githubusercontent.com/baheldeepti/hospital-streamlit-app/main/modified_healthcare_dataset.csv")
@@ -27,7 +27,7 @@ def load_data_ui():
         if uploaded_file:
             with st.spinner("Loading your file..."):
                 try:
-                    df = pd.read_csv(uploaded_fi)
+                    df = pd.read_csv(uploaded_file)
                     st.session_state["main_df"] = df
                     st.success("✅ Uploaded data loaded successfully.")
                     st.dataframe(df.head(10))
@@ -77,22 +77,22 @@ def try_visualize(result):
         st.warning(f"Could not render chart: {e}")
 
 # 📝 Summary formatter
-def format_summar(summary_text: str) -> str:
+def format_summary(summary_text: str) -> str:
     return f"📝 **Summary:** {summary_text.strip()}"
 
- 🧠 GPT-based summary
+# 🧠 GPT-based summary
 def get_summary(question, result_str):
     summary_prompt = f"You are a helpful assistant.\nThe user asked: {question}\nThe result of the query was: {result_str}\nSummarize the insight clearly."
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "user" "content": summary_prompt}]
+            messages=[{"role": "user", "content": summary_prompt}]
         )
         return format_summary(response.choices[0].message.content.strip())
     except:
         return ""
 
-# 🧠 Main chat handle
+# 🧠 Main chat handler
 def handle_chat(question):
     df = st.session_state["main_df"]
     if df is None:
@@ -123,9 +123,7 @@ def handle_chat(question):
             if "date" in col.lower() or "admission" in col.lower():
                 df[col] = pd.to_datetime(df[col], errors="coerce")
 
-        # Add required libraries to exec context
         local_vars = {"df": df, "pd": pd, "np": np}
-
         exec(code, {}, local_vars)
         result = local_vars.get("result", "No result")
 
@@ -150,7 +148,7 @@ def render_logs():
     st.subheader("🪵 Conversation Logs")
     query_log = st.session_state.get("query_log", [])
     if query_log:
-        .markdown("### 🔁 Mos Asked Questions")
+        st.markdown("### 🔁 Most Asked Questions")
         log_df = pd.DataFrame(query_log, columns=["Query"])
         value_counts = log_df["Query"].value_counts().reset_index()
         value_counts.columns = ["Query", "Count"]
@@ -167,9 +165,11 @@ def render_logs():
 # 🧪 App UI
 st.title("🏥 Hospital Chat Assistant")
 st.markdown("Ask questions about hospital data. Get real answers with charts and code-backed insights!")
-load_data_ui()if prompt := st.chat_input("Ask a question about the hospital dataset..."):
+
+load_data_ui()
+
+if prompt := st.chat_input("Ask a question about the hospital dataset..."):
     handle_chat(prompt)
 
-# 🪵 Logs display
 st.markdown("---")
 render_logs()
