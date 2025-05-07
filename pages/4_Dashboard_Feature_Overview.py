@@ -2,7 +2,6 @@ import streamlit as st
 
 st.set_page_config(page_title="📊 Dashboard Feature Overview", layout="wide")
 
-
 # 📄 Try to load and display external Markdown file content if available
 try:
     with open("docs/Dashboard_Feature_Overview.md", "r") as f:
@@ -48,7 +47,4 @@ This document outlines the current capabilities of the **Hospital Dashboard** pa
 - **Dynamic Layout**: Adapts content based on data availability and column presence.
 - **Cached Calculations**: Optimized for performance using `@st.cache` or `st.cache_data`.
 - **Session Safety**: Prevents crashes if dataset is not yet loaded.
-
-)
-
-
+    """)
