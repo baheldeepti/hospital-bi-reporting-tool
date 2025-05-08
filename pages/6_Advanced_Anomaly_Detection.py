@@ -107,8 +107,7 @@ with st.expander("🔧 Data Cleansing & Feature Engineering", expanded=True):
 
     all_features = [
         'Age', 'Length of Stay', 'Condition', 'Medication', 'Insurance',
-        'Is Weekend', 'Admission Month', 'Day of Week', 'Is Long Stay',
-        'Billing per Day', 'Age x Billing', 'Age x Stay', 'Weekend x Billing',
+        'Is Weekend', 'Admission Month', 'Day of Week', 'Is Long Stay', 'Age x Stay', 
         'Insurance x Condition', 'Is_Chronic'
     ]
 # -- Anomaly Detection
