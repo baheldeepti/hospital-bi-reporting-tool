@@ -69,6 +69,7 @@ if not all(col in df.columns for col in required_cols):
     st.stop()
 
 # -- Data Cleansing & Feature Engineering
+# -- Data Cleansing & Feature Engineering
 with st.expander("🔧 Data Cleansing & Feature Engineering", expanded=True):
     df['Date of Admission'] = pd.to_datetime(df['Date of Admission'], errors='coerce')
     df['Discharge Date'] = pd.to_datetime(df['Discharge Date'], errors='coerce')
@@ -78,6 +79,16 @@ with st.expander("🔧 Data Cleansing & Feature Engineering", expanded=True):
     df['Gender'] = df['Gender'].fillna("Unknown")
     df['Insurance'] = pd.factorize(df['Insurance Provider'])[0]
     df['Condition'] = LabelEncoder().fit_transform(df['Medical Condition'])
+
+    # 📘 ICD Mapping
+    icd_mapping = {
+        'Infections': 'A49.9', 'Flu': 'J10.1', 'Cancer': 'C80.1', 'Asthma': 'J45.909',
+        'Heart Disease': 'I51.9', 'Alzheimer’s': 'G30.9', 'Diabetes': 'E11.9', 'Obesity': 'E66.9'
+    }
+    df['ICD_Code'] = df['Medical Condition'].map(icd_mapping)
+    df['ICD_Chapter'] = df['ICD_Code'].str[0]
+    df['Is_Chronic'] = df['ICD_Code'].isin(['C80.1', 'J45.909', 'I51.9', 'G30.9', 'E11.9', 'E66.9']).astype(int)
+
     df['Medication'] = LabelEncoder().fit_transform(df['Medication'])
 
     df = df.dropna(subset=['Age', 'Billing Amount', 'Length of Stay', 'Condition', 'Medication', 'Insurance'])
@@ -97,9 +108,9 @@ with st.expander("🔧 Data Cleansing & Feature Engineering", expanded=True):
     all_features = [
         'Age', 'Length of Stay', 'Condition', 'Medication', 'Insurance',
         'Is Weekend', 'Admission Month', 'Day of Week', 'Is Long Stay',
-        'Billing per Day', 'Age x Billing', 'Age x Stay', 'Weekend x Billing', 'Insurance x Condition'
+        'Billing per Day', 'Age x Billing', 'Age x Stay', 'Weekend x Billing',
+        'Insurance x Condition', 'Is_Chronic'
     ]
-
 # -- Anomaly Detection
 iso = IsolationForest(contamination=0.05, random_state=42)
 df['anomaly_score'] = iso.fit_predict(df[['Billing Amount']])
